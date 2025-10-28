@@ -1,121 +1,98 @@
-# Private Event Eligibility (FHEVM)
+# Secret Resume Filter · Zama FHEVM
 
-Privacy‑preserving event registration on **Zama FHEVM**: users encrypt their age, country (ISO‑3166 numeric), and invite flag in a single shot. The smart contract stores **only encrypted eligibility** (a boolean handle) and per‑event policy. No raw personal data or individual plaintext values are kept on‑chain.
+Privacy-first recruiting on-chain. Candidates submit **encrypted** résumé attributes; the contract returns only a single **encrypted verdict** (FIT / NO FIT). Employers decrypt the verdict with **userDecrypt** via Zama’s Relayer SDK, while raw inputs and criteria remain private.
 
-> Frontend entry: `frontend/public/index.html`
-
----
-
-## ✨ What it does
-
-* **Private registration:** age, country, and invite flag are encrypted client‑side via Zama Relayer SDK. The contract receives the external ciphertext handles plus proof and evaluates eligibility entirely under FHE.
-* **Policy control:** the owner sets per‑event policy: min age, invite required (true/false), and an allow‑list of countries.
-* **Privacy by design:** the chain only holds encrypted eligibility handles. Clear‑text PII is never emitted or stored.
-* **Flexible decryption:**
-
-  * **Public decrypt** (optional): owner may mark specific values public (e.g., for audits/demos).
-  * **User decrypt**: authorized users can EIP‑712 sign a request for relayer‑assisted decrypt of their own handle.
+> **Network**: Sepolia
+> **Contract (deployed)**: `0x12D716b26D896adC8994eFe4b36f11EF37158D96`
+> **Relayer SDK**: `@zama-fhe/relayer-sdk` v0.2.0
+> **Solidity**: 0.8.24 with `viaIR: true`, optimizer enabled
 
 ---
 
-## 📦 Repository layout
+## Overview
 
-```
-frontend/
-  public/
-    index.html        # Single‑file app (ethers v6 + Relayer SDK 0.2.x)
-contracts/
-  PrivateEventEligibility.sol
-scripts/
-  deploy.ts | deploy.js
-hardhat.config.ts | .js
-.env.example
-```
+**Secret Resume Filter** is a minimal, production-style FHEVM dApp:
+
+* **Employers** create positions and upload **encrypted criteria** (min experience, min education, required skills bitmask, max salary).
+* **Candidates** submit **encrypted applications** (same fields, encrypted locally in the browser).
+* The contract evaluates everything **homomorphically** and emits a handle for an **encrypted verdict**.
+* **Only the employer** gets decryption rights for the verdict (user-level EIP‑712 auth with Relayer SDK).
+
+This lets teams pre-screen candidates without revealing sensitive compensation expectations or personal data on-chain.
 
 ---
 
-## 🔐 Smart contract (overview)
+## Core Features
 
-**`PrivateEventEligibility.sol`**
-
-* Stores per‑event policy:
-
-  * `minAge` (uint16), `requireInvite` (bool), `allowCountries[]` (uint16 ISO numeric)
-* Accepts a single external encrypted input (age, country, invite) and computes **`eligible = (age >= minAge) && (country in allow) && (inviteOK)`**
-* Emits no PII, keeps only encrypted handles
-* Utility methods to expose encrypted handles for user/public decrypt
-
-> Compiled against Solidity 0.8.x with `@fhevm/solidity` library. See contract for exact API.
+* 🔒 Fully encrypted inputs & criteria (Zama FHE Solidity lib).
+* ✅ Binary result only: **FIT / NO FIT** (as `ebool`).
+* 👤 Access control with `FHE.allow` — employer-only decryption.
+* 🧩 Bitmask skill check: `(skills & required) == required`.
+* 🔧 Clean separation of roles (Owner → creates positions, Employer → manages criteria, Candidate → applies).
+* ⚙️ Works with Relayer SDK v0.2.0 (WASM workers enabled).
 
 ---
 
-## 🖥️ Frontend (single file)
+## Smart Contract
 
-* Pure HTML/JS app under `frontend/public/index.html`
-* Uses **ethers v6** and **Relayer SDK 0.2.x** from CDN
-* Minimal state management; robust network handling (recreates provider/contract on `chainChanged`/`accountsChanged`)
-* Buttons:
+* File: `contracts/SecretResumeFilter.sol`
+* Inherits: `SepoliaConfig` from `@fhevm/solidity`
+* Uses only official Zama Solidity library: `@fhevm/solidity/lib/FHE.sol`
 
-  * **Submit Encrypted** – registers user
-  * **Set Policy** – owner‑only policy update
-  * **Make My Eligibility Public** – optional public decrypt
-  * **Get Handle / Public Decrypt / User Decrypt** – read & decrypt own eligibility
+### Main storage
 
----
-
-## 🚀 Quick start
-
-### Prerequisites
-
-* Node 18+
-* MetaMask (Sepolia)
-* Sepolia ETH for gas
-
-### Install
-
-```bash
-npm i
+```solidity
+struct Criteria {
+  euint8  minExp;          // candidate.yearsExp >= minExp
+  euint8  minEdu;          // candidate.eduLevel >= minEdu
+  euint16 requiredSkills;  // (skills & required) == required
+  euint32 maxSalary;       // candidate.expSalary <= maxSalary
+  address employer;        // decrypt rights holder
+  bool    exists;
+}
 ```
 
-### Environment
+### Key functions
 
-Copy `.env.example` → `.env` and fill values (RPC, private key, relayer URL if different).
+* `createPosition(uint256 positionId, address employer)` — owner creates/assigns a position to an employer.
+* `setCriteriaEncrypted(positionId, minExp, minEdu, reqSkills, maxSalary, proof)` — employer sets **encrypted** criteria via Relayer SDK.
+* `setCriteriaPlain(positionId, ...)` — dev helper; converts clear values to encrypted on-chain (avoid in prod).
+* `makeCriteriaPublic(positionId)` — demo helper to mark criteria publicly decryptable.
+* `getCriteriaHandles(positionId)` — returns `bytes32` handles for off-chain audits.
+* `evaluateApplication(positionId, yearsExp, eduLevel, skillsMask, expSalary, proof)` — returns encrypted `ebool` verdict; grants decryption right to the employer.
 
-### Compile & deploy (Hardhat)
+> The `evaluateApplication` implementation aggregates conditions progressively inside scoped blocks to avoid `Stack too deep` and keeps gas reasonable.
 
-```bash
-npx hardhat clean
-npx hardhat compile
-npx hardhat deploy --network sepolia
-```
+### Events
 
-Grab the deployed contract address and paste it into the **CONFIG** block inside `frontend/public/index.html`:
-
-```js
-window.CONFIG = {
-  NETWORK_NAME: 'Sepolia',
-  CHAIN_ID_HEX: '0xaa36a7',
-  CONTRACT_ADDRESS: '0x…',
-  RELAYER_URL: 'https://relayer.testnet.zama.cloud'
-};
-```
-
-### Serve the frontend
-
-Open `frontend/public/index.html` directly in the browser or host it with any static server (e.g. VSCode Live Server).
+* `PositionCreated(positionId, employer)`
+* `CriteriaUpdated(positionId, minExpH, minEduH, requiredSkillsH, maxSalaryH)`
+* `ApplicationEvaluated(positionId, candidate, employer, verdictHandle)`
 
 ---
 
-## 🛠️ Development notes
+## Frontend
 
-* **Relayer SDK**: initialized once after wallet connect; re‑initialized on network/account change.
-* **Ethers v6**: use `new BrowserProvider(window.ethereum, 'any')` to avoid cached chainId; always rebuild provider/contract on `chainChanged`.
-* **Network**: app enforces Sepolia (11155111). If the wallet is on another network, it prompts a switch and rebuilds connections.
+* Single-file app
+* Location: **`frontend/public/index.html`** (no build tools required; pure ESM and CDN).
+* Tech: Ethers v6 + Relayer SDK v0.2.0.
+* Design: neon-glass dark UI with skill chips, event scanning & one-click decrypt.
+
+**What it does:**
+
+1. Connects wallet and initializes Relayer SDK (`initSDK()` → `createInstance(...)`).
+2. Employer flow: create position → set encrypted criteria → scan `ApplicationEvaluated` → **userDecrypt** verdict.
+3. Candidate flow: pick position → encrypt 4 fields → submit → employer later decrypts the verdict.
+
+
+## Security
+
+* This project demonstrates encrypted comparisons using FHEVM. Always audit before production use.
+* Keep Relayer SDK versions pinned (here: v0.2.0).
+* Never log plaintext candidate data; UI encrypts client-side prior to any chain call.
 
 ---
 
+## License
 
-## 📄 License
-
-MIT — see `LICENSE`.
-
+MIT — see `LICENSE` file.

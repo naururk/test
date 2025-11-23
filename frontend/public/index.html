@@ -2,543 +2,914 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
+  <title>Proof-of-Education</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Proof-of-Education • Zama FHEVM</title>
+  <meta name="color-scheme" content="light" />
 
-  <!-- Required for Relayer SDK (WASM/Workers) -->
+  <!-- Требуется для Relayer SDK (WASM / workers) -->
   <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin" />
   <meta http-equiv="Cross-Origin-Embedder-Policy" content="require-corp" />
 
   <style>
     :root{
-      --ink:#0f172a; --muted:#64748b; --bg:#f6f7fb; --card:#ffffff; --br:#e5e7eb;
-      --accent:#0ea5e9; --accent-2:#10b981; --bad:#ef4444; --ok:#16a34a; --alt:#6366f1;
-      --shadow:0 10px 30px rgba(2,6,23,.08);
+      --bg:#f4f6fb;
+      --bg-card:#ffffff;
+      --border:#d5ddf0;
+      --ink:#0f172a;
+      --muted:#6b7280;
+      --accent:#2563eb;
+      --accent-dark:#1d4ed8;
+      --danger:#b91c1c;
+      --success:#15803d;
+      --shadow:0 18px 40px rgba(15,23,42,.14);
+      --r-lg:20px;
+      --r-md:12px;
+      --pill:#eef2ff;
     }
     *{box-sizing:border-box}
-    html,body{height:100%}
+    html,body{height:100%;margin:0;padding:0}
     body{
-      margin:0;
-      font:15px/1.55 ui-sans-serif,system-ui,Segoe UI,Roboto,Inter,Arial;
-      color:var(--ink);
+      font:15px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
       background:
-        radial-gradient(70% 50% at 0% 0%, rgba(16,185,129,.10), transparent 60%),
-        radial-gradient(50% 40% at 100% 0%, rgba(99,102,241,.12), transparent 60%),
-        var(--bg);
-      padding:16px;
-    }
-    .wrap{
-      max-width:1080px;
-      margin:0 auto;
-      display:grid;
-      gap:14px;
-      grid-template-columns: 1.1fr 1.6fr 1.1fr;
-    }
-    .header{
-      grid-column:1/-1;
+        radial-gradient(1200px 600px at 50% -10%, #dbeafe 0, transparent 60%),
+        linear-gradient(180deg,#e5e7eb 0,#f9fafb 40%,#eef2ff 100%);
+      color:var(--ink);
       display:flex;
-      gap:12px;
+      flex-direction:column;
+      align-items:stretch;
+    }
+    .topbar{
+      display:flex;
       align-items:center;
-      padding:14px;
-      border:1px solid var(--br);
-      border-radius:22px;
-      background:linear-gradient(180deg,#fff,#fbfdff);
-      box-shadow:var(--shadow);
+      justify-content:space-between;
+      padding:10px 16px;
+      gap:10px;
+      border-bottom:1px solid #e5e7eb;
+      backdrop-filter:blur(10px);
+      background:rgba(255,255,255,.85);
     }
-    .logo{
-      width:42px;height:42px;border-radius:16px;
-      background:conic-gradient(from 120deg,var(--accent),var(--alt),var(--accent-2),var(--accent));
-      display:grid; place-items:center;
-      color:#fff; font-weight:900;
-      box-shadow:0 12px 34px rgba(14,165,233,.35);
-    }
-    .title{font-weight:900}
-    .sub{font-size:12px;color:var(--muted)}
-    .spacer{flex:1}
-    .pill{
-      display:inline-flex; align-items:center; gap:8px;
-      padding:6px 10px; border-radius:999px;
-      border:1px solid var(--br); background:#fff;
-      color:var(--muted); font-weight:800;
-    }
-    .kbd{
-      font-family:ui-monospace,Menlo,Consolas,monospace;
-      font-size:11px; background:#0f172a; color:#fff;
-      border-radius:6px; padding:2px 6px;
-    }
-    .btn{
-      display:inline-flex; align-items:center; justify-content:center; gap:8px;
-      min-height:40px; padding:10px 14px;
-      border-radius:14px; border:1px solid var(--br);
-      cursor:pointer; background:#0f172a; color:#fff;
-      font-weight:900; box-shadow:0 10px 30px rgba(2,6,23,.15);
-    }
-    .btn.ghost{background:#fff; color:#0f172a}
-    .btn.small{min-height:34px; padding:8px 12px; border-radius:12px}
-
-    .card{
-      border:1px solid var(--br);
-      border-radius:22px;
-      background:var(--card);
-      box-shadow:var(--shadow);
-      padding:14px;
-    }
-    .h{
-      font-size:13px; font-weight:900;
-      letter-spacing:.06em; text-transform:uppercase;
-      color:#0f172a;
-    }
-    .muted{color:var(--muted)}
-    .grid{display:grid; gap:10px}
-    .row{display:flex; align-items:end; gap:10px; flex-wrap:wrap}
-    label{
-      display:block; font-size:12px; color:#475569;
-      font-weight:800; margin-bottom:6px;
-    }
-    .inp{
-      width:100%; padding:12px;
-      border:1px solid var(--br);
-      border-radius:14px;
-      background:#f8fafc;
-      font-weight:800; color:#0f172a;
-    }
-    .stamp{display:grid; gap:8px}
-    .ticket{
-      border:1px dashed #dbe3ef;
-      border-radius:18px;
-      background:linear-gradient(180deg,#fff,#f6f9ff);
-      padding:10px 12px;
-    }
-    .row2{
-      display:grid;
-      grid-template-columns: 1fr auto;
+    .brand{
+      display:flex;
       align-items:center;
       gap:10px;
     }
-    .tag{
-      font-size:11px; padding:3px 8px;
-      border-radius:10px;
-      border:1px solid var(--br);
-      background:#f8fafc; color:#475569;
-      font-weight:800;
+    .logo{
+      width:32px;height:32px;border-radius:16px;
+      background:conic-gradient(from 150deg,#4f46e5,#22c55e,#38bdf8,#4f46e5);
+      display:flex;align-items:center;justify-content:center;
+      color:#eef2ff;font-weight:900;font-size:16px;
+      box-shadow:0 12px 25px rgba(79,70,229,.4);
     }
-    .tag.ok{background:#ecfdf5; color:#166534; border-color:#bbf7d0}
-    .tag.bad{background:#fef2f2; color:#991b1b; border-color:#fecaca}
-    .note{font-size:12px; color:#0ea5e9; font-weight:800}
+    .brand-main{font-weight:800;font-size:18px}
+    .brand-sub{font-size:12px;color:var(--muted)}
+    .top-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .pill{
+      display:inline-flex;align-items:center;gap:6px;
+      padding:5px 10px;border-radius:999px;
+      border:1px solid #e5e7eb;background:#fff;
+      font-size:12px;color:var(--muted);
+    }
+    .pill strong{color:var(--ink);font-weight:600}
+    .mono{font-family:ui-monospace,Menlo,Consolas,"SF Mono",monospace}
 
-    @media (max-width: 980px){
-      .wrap{grid-template-columns:1fr}
+    .btn{
+      appearance:none;border:none;cursor:pointer;
+      border-radius:999px;
+      padding:7px 14px;
+      font-size:13px;font-weight:600;
+      display:inline-flex;align-items:center;justify-content:center;gap:6px;
+      transition:.15s transform ease, .15s box-shadow ease, .15s filter ease, .15s background ease;
+    }
+    .btn-primary{
+      background:linear-gradient(135deg,var(--accent),var(--accent-dark));
+      color:#eff6ff;
+      box-shadow:0 14px 30px rgba(37,99,235,.40);
+    }
+    .btn-ghost{
+      background:#fff;color:var(--ink);
+      border:1px solid #e5e7eb;
+    }
+    .btn:hover:not(:disabled){transform:translateY(-1px);filter:brightness(1.05)}
+    .btn:disabled{opacity:.65;cursor:not-allowed;box-shadow:none;transform:none}
+
+    .layout{
+      flex:1;
+      display:grid;
+      grid-template-columns:minmax(0,1.15fr) minmax(0,1.4fr) minmax(0,1.15fr);
+      gap:16px;
+      padding:16px;
+      max-width:1440px;
+      width:100%;
+      margin:0 auto 10px;
+    }
+    .card{
+      background:var(--bg-card);
+      border-radius:var(--r-lg);
+      border:1px solid var(--border);
+      box-shadow:var(--shadow);
+      padding:14px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .card-header{
+      display:flex;align-items:center;justify-content:space-between;gap:8px;
+    }
+    .card-title{font-size:15px;font-weight:700}
+    .card-sub{font-size:12px;color:var(--muted)}
+    .section-label{
+      font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.16em;
+      margin-bottom:4px;
+    }
+
+    .field-col{display:flex;flex-direction:column;gap:4px;margin-bottom:6px;}
+    .field-label{font-size:13px;font-weight:600;color:#374151}
+    .input-shell{
+      display:flex;align-items:center;gap:8px;
+      border-radius:var(--r-md);
+      border:1px solid var(--border);
+      padding:8px 10px;
+      background:#f9fafb;
+    }
+    input[type="number"],input[type="text"]{
+      border:none;outline:none;background:transparent;
+      font:inherit;width:100%;
+    }
+    input::placeholder{color:#9ca3af}
+    .unit{font-size:12px;color:#9ca3af;white-space:nowrap}
+
+    .row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+    .row-space{display:flex;justify-content:space-between;align-items:center;gap:8px}
+    .muted{font-size:12px;color:var(--muted)}
+    .status-pill{
+      display:inline-flex;align-items:center;gap:6px;
+      border-radius:999px;padding:3px 10px;
+      border:1px solid #e5e7eb;background:#f9fafb;
+      font-size:11px;color:#374151;
+    }
+    .dot{width:8px;height:8px;border-radius:999px;background:#d1d5db}
+    .dot-ok{background:var(--success)}
+    .dot-bad{background:var(--danger)}
+    .dot-pending{background:#facc15}
+
+    .stamp-row{
+      border-radius:var(--r-md);
+      border:1px dashed #e5e7eb;
+      padding:8px 10px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      font-size:13px;
+      background:#f9fafb;
+    }
+    .stamp-label{font-weight:500}
+    .stamp-value{font-size:12px;color:var(--muted)}
+    .stamp-tag{
+      border-radius:999px;
+      padding:3px 10px;
+      font-size:11px;font-weight:600;
+      border:1px solid #e5e7eb;
+      background:#fff;
+    }
+    .stamp-tag.ok{border-color:#bbf7d0;background:#dcfce7;color:#166534}
+    .stamp-tag.fail{border-color:#fecaca;background:#fee2e2;color:#b91c1c}
+    .stamp-tag.pending{border-color:#e5e7eb;background:#f9fafb;color:#6b7280}
+
+    .handle-pill{
+      padding:3px 8px;border-radius:999px;
+      border:1px dashed #cbd5f5;
+      background:#eef2ff;
+      font-size:11px;
+    }
+    .divider{height:1px;background:linear-gradient(90deg,transparent,#e5e7eb,transparent);margin:4px 0 6px}
+    .tiny{font-size:11px;color:#9ca3af}
+
+    @media (max-width:1024px){
+      .layout{grid-template-columns:minmax(0,1fr);max-width:100%;padding:10px}
     }
   </style>
 </head>
 <body>
-  <header class="header">
-    <div class="logo">E</div>
-    <div>
-      <div class="title">Proof-of-Education</div>
-      <div class="sub">Encrypted modules · public tier stamps (no circles)</div>
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">E</div>
+      <div>
+        <div class="brand-main">Proof-of-Education</div>
+        <div class="brand-sub">Encrypted modules · public tier stamps (no circles)</div>
+      </div>
     </div>
-    <div class="spacer"></div>
-    <div class="pill">
-      Contract: <span id="contractShort" style="margin-left:6px" class="kbd">—</span>
+    <div class="top-right">
+      <div class="pill">
+        Net: <strong class="mono" id="netLabel">—</strong>
+      </div>
+      <div class="pill">
+        Contract: <span class="mono" id="contractShort">—</span>
+      </div>
+      <div class="pill">
+        You: <span class="mono" id="meLabel">not connected</span>
+      </div>
+      <button id="connectBtn" class="btn btn-primary">Connect wallet</button>
+      <button id="resetBtn" class="btn btn-ghost">Reset</button>
     </div>
-    <button id="connectBtn" class="btn">Connect Wallet</button>
   </header>
 
-  <main class="wrap">
-    <!-- LEFT: Status / Stamps -->
-    <section class="card grid">
-      <div class="h">Module status</div>
-      <div class="grid" style="grid-template-columns:1fr auto; align-items:end; gap:10px">
+  <main class="layout">
+    <!-- LEFT: MODULE STATUS -->
+    <section class="card">
+      <div class="card-header">
         <div>
-          <label>Module ID (u8)</label>
-          <input id="modId" class="inp" type="number" min="0" max="255" value="1" />
+          <div class="card-title">Module status</div>
+          <div class="card-sub">Tier stamps are public, raw score stays private.</div>
         </div>
-        <button id="reloadBtn" class="btn ghost small">Reload</button>
+        <button id="reloadBtn" class="btn btn-ghost" style="font-size:12px;">Reload</button>
       </div>
 
-      <div class="ticket stamp">
-        <div class="row2">
-          <div class="muted" style="font-size:12px">Stamp A — score ≥ T1</div>
-          <code class="kbd" id="h1">—</code>
+      <div class="field-col">
+        <div class="field-label">Module ID (u8)</div>
+        <div class="input-shell" style="max-width:180px;">
+          <input id="moduleIdInput" type="number" min="1" max="255" value="1" />
+          <span class="unit">ID</span>
         </div>
-        <div id="s1" class="tag">pending</div>
-
-        <div class="row2">
-          <div class="muted" style="font-size:12px">Stamp B — score ≥ T2</div>
-          <code class="kbd" id="h2">—</code>
-        </div>
-        <div id="s2" class="tag">pending</div>
-
-        <div class="row2">
-          <div class="muted" style="font-size:12px">Stamp C — score ≥ T3</div>
-          <code class="kbd" id="h3">—</code>
-        </div>
-        <div id="s3" class="tag">pending</div>
-
-        <div class="row2" style="margin-top:6px">
-          <div class="muted" style="font-size:12px">Decision</div>
-          <div class="tag" id="decided">—</div>
-        </div>
-        <div class="row2">
-          <div class="muted" style="font-size:12px">Tier</div>
-          <div class="kbd" id="tier">0</div>
-        </div>
-        <div class="muted" style="font-size:12px">
-          Raw score handle: <code class="kbd" id="scoreH">—</code>
-        </div>
-        <button id="privDecrypt" class="btn ghost small">
-          Reveal my score (signed)
-        </button>
       </div>
 
-      <div class="muted" style="font-size:12px">
-        Only the three stamps are public-decryptable on-chain. In this demo they are read via signed decrypt because of relayer CORS.
-      </div>
-    </section>
+      <div class="section-label">Stamps</div>
 
-    <!-- CENTER: Submit -->
-    <section class="card grid">
-      <div class="h">Submit encrypted score</div>
+      <div class="stamp-row">
+        <div>
+          <div class="stamp-label">Stamp A — score ≥ T1</div>
+          <div class="stamp-value" id="stampAValue">pending</div>
+        </div>
+        <div class="stamp-tag pending" id="stampATag">pending</div>
+      </div>
+
+      <div class="stamp-row">
+        <div>
+          <div class="stamp-label">Stamp B — score ≥ T2</div>
+          <div class="stamp-value" id="stampBValue">pending</div>
+        </div>
+        <div class="stamp-tag pending" id="stampBTag">pending</div>
+      </div>
+
+      <div class="stamp-row">
+        <div>
+          <div class="stamp-label">Stamp C — score ≥ T3</div>
+          <div class="stamp-value" id="stampCValue">pending</div>
+        </div>
+        <div class="stamp-tag pending" id="stampCTag">pending</div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="row-space">
+        <div class="field-col" style="margin-bottom:0">
+          <div class="field-label">Decision</div>
+          <div class="status-pill" id="decisionPill">
+            <span class="dot dot-pending" id="decisionDot"></span>
+            <span id="decisionText">not computed</span>
+          </div>
+        </div>
+        <div class="field-col" style="margin-bottom:0;text-align:right;">
+          <div class="field-label">Tier</div>
+          <div class="status-pill">
+            <span class="dot dot-pending" id="tierDot"></span>
+            <span id="tierText">0</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="field-col" style="margin-bottom:0">
+        <div class="field-label">Raw score handle</div>
+        <div class="row" style="align-items:center;">
+          <span class="handle-pill mono" id="scoreHandleLabel">—</span>
+        </div>
+      </div>
+
       <div class="row">
-        <div style="flex:1">
-          <label>Score (uint16)</label>
-          <input id="score" class="inp" placeholder="e.g. 87" inputmode="numeric" />
-        </div>
-        <button id="submitBtn" class="btn">Encrypt &amp; Submit</button>
+        <button id="revealScoreBtn" class="btn btn-ghost">Reveal my score (signed)</button>
+        <div class="muted">Your (private) score: <b id="privateScoreText">—</b></div>
       </div>
-      <div class="ticket">
-        <div class="muted" style="font-size:12px">
-          <b>Flow</b>: encrypt in browser → on-chain FHE compares with encrypted thresholds → stamps become public.
-        </div>
-      </div>
-      <div class="note" id="note"></div>
-      <div class="muted" style="font-size:12px">
-        If SDK fails to load, check firewall/VPN and that these CDNs are reachable:
-        <code class="kbd">cdn.zama.org</code>,
-        <code class="kbd">cdn.jsdelivr.net</code>,
-        <code class="kbd">unpkg.com</code>.
+
+      <div class="tiny">
+        Only the three stamps are public-decryptable via Relayer.  
+        In this demo the numeric score is read via signed user decrypt (EIP-712), as in “The Platform”.
       </div>
     </section>
 
-    <!-- RIGHT: Admin -->
-    <section class="card grid">
-      <div class="h">Admin · encrypted thresholds</div>
-      <div class="grid" style="grid-template-columns:repeat(3,1fr); gap:10px">
-        <div><label>T1 (uint16)</label><input id="t1" class="inp" placeholder="50" /></div>
-        <div><label>T2 (uint16)</label><input id="t2" class="inp" placeholder="120" /></div>
-        <div><label>T3 (uint16)</label><input id="t3" class="inp" placeholder="250" /></div>
+    <!-- CENTER: SUBMIT SCORE -->
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Submit encrypted score</div>
+          <div class="card-sub">Encrypt in browser → contract compares vs encrypted thresholds.</div>
+        </div>
       </div>
-      <button id="setThr" class="btn ghost">Encrypt &amp; Update</button>
-      <div class="muted" style="font-size:12px">
-        Owner: <code class="kbd" id="owner">—</code>
+
+      <div class="field-col">
+        <div class="field-label">Score (uint16)</div>
+        <div class="input-shell">
+          <input id="scoreInput" type="number" min="0" max="65535" placeholder="e.g. 87" />
+          <span class="unit">points</span>
+        </div>
+      </div>
+
+      <div class="row">
+        <button id="submitScoreBtn" class="btn btn-primary">Encrypt &amp; Submit</button>
+        <div class="muted" id="submitStatus"></div>
+      </div>
+
+      <div class="divider"></div>
+      <div class="section-label">Flow</div>
+      <div class="muted">
+        The Relayer SDK creates an encrypted input for your score.  
+        The contract evaluates it fully homomorphically against encrypted thresholds
+        and updates your public stamps.
+      </div>
+
+      <div class="divider"></div>
+      <div class="section-label">SDK / CORS</div>
+      <div class="tiny" id="sdkHint">
+        If the SDK fails to load, check VPN/firewall and that at least one CDN is reachable:
+        <code>cdn.zama.org</code>, <code>cdn.jsdelivr.net</code>, <code>unpkg.com</code>.
+      </div>
+    </section>
+
+    <!-- RIGHT: ADMIN -->
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Admin · encrypted thresholds</div>
+          <div class="card-sub">Owner-only: thresholds remain encrypted on-chain.</div>
+        </div>
+      </div>
+
+      <div class="section-label">Thresholds for current module</div>
+
+      <div class="field-col">
+        <div class="field-label">T1 (uint16)</div>
+        <div class="input-shell">
+          <input id="t1Input" type="number" min="0" max="65535" value="50" />
+          <span class="unit">points</span>
+        </div>
+      </div>
+      <div class="field-col">
+        <div class="field-label">T2 (uint16)</div>
+        <div class="input-shell">
+          <input id="t2Input" type="number" min="0" max="65535" value="120" />
+          <span class="unit">points</span>
+        </div>
+      </div>
+      <div class="field-col">
+        <div class="field-label">T3 (uint16)</div>
+        <div class="input-shell">
+          <input id="t3Input" type="number" min="0" max="65535" value="250" />
+          <span class="unit">points</span>
+        </div>
+      </div>
+
+      <div class="row">
+        <button id="setThrBtn" class="btn btn-primary">Encrypt &amp; Update</button>
+        <div class="muted" id="thrStatus"></div>
+      </div>
+
+      <div class="divider"></div>
+      <div class="muted">
+        Owner: <span class="mono" id="ownerLabel">—</span>
       </div>
     </section>
   </main>
 
-  <!-- Logic -->
   <script type="module">
     import { BrowserProvider, Contract } from "https://cdn.jsdelivr.net/npm/ethers@6.15.0/+esm";
-    import {
-      initSDK,
-      createInstance,
-      SepoliaConfig,
-      generateKeypair
-    } from "https://cdn.zama.org/relayer-sdk-js/0.3.0-5/relayer-sdk-js.js";
 
+    /* ===== CONFIG ===== */
     const CONTRACT_ADDRESS = "0x0A89386172E7E5455b3a3b5f60b1797E04d8C8B0";
-    const CHAIN_ID_HEX = "0xaa36a7";
+    const CHAIN_ID_HEX = "0xaa36a7"; // Sepolia
+    const CHAIN_ID_DEC = 11155111n;
+
+    const ORIGIN = window.location.origin;
+    const HAS_LOCAL_PROXY = ORIGIN.includes("localhost:3443") || ORIGIN.includes("127.0.0.1:3443");
+    const RELAYER_URL = HAS_LOCAL_PROXY ? ORIGIN + "/relayer" : "https://relayer.testnet.zama.org";
+    const GATEWAY_URL = HAS_LOCAL_PROXY ? ORIGIN + "/gateway" : "https://gateway.testnet.zama.org";
 
     const ABI = [
-      { type:"function", stateMutability:"view", name:"owner", inputs:[], outputs:[{type:"address"}] },
+      { inputs:[], name:"owner", outputs:[{type:"address"}], stateMutability:"view", type:"function" },
+      { inputs:[{name:"newOwner", type:"address"}], name:"transferOwnership", outputs:[], stateMutability:"nonpayable", type:"function" },
+
       {
-        type:"function", stateMutability:"nonpayable", name:"setModuleThresholds",
         inputs:[
-          {name:"moduleId",type:"uint8"},
-          {name:"_T1",type:"bytes32"},
-          {name:"_T2",type:"bytes32"},
-          {name:"_T3",type:"bytes32"},
-          {name:"proof",type:"bytes"},
-        ], outputs:[]
+          {name:"moduleId", type:"uint8"},
+          {name:"t1", type:"bytes32"},
+          {name:"t2", type:"bytes32"},
+          {name:"t3", type:"bytes32"},
+          {name:"proof", type:"bytes"},
+        ],
+        name:"setModuleThresholds", outputs:[], stateMutability:"nonpayable", type:"function"
       },
       {
-        type:"function", stateMutability:"nonpayable", name:"submitModuleScore",
         inputs:[
-          {name:"moduleId",type:"uint8"},
-          {name:"encScore",type:"bytes32"},
-          {name:"proof",type:"bytes"},
-        ], outputs:[]
+          {name:"moduleId", type:"uint8"},
+          {name:"encScore", type:"bytes32"},
+          {name:"proof", type:"bytes"},
+        ],
+        name:"submitModuleScore", outputs:[], stateMutability:"nonpayable", type:"function"
       },
       {
-        type:"function", stateMutability:"view", name:"getMyModuleHandles",
-        inputs:[{name:"moduleId",type:"uint8"}],
+        inputs:[{name:"moduleId", type:"uint8"}],
+        name:"getMyModuleHandles",
         outputs:[
-          {type:"bytes32"},{type:"bytes32"},{type:"bytes32"},{type:"bytes32"},{type:"bool"}
-        ]
-      },
-      {
-        type:"function", stateMutability:"view", name:"getModuleTierHandlesOf",
-        inputs:[{name:"who",type:"address"},{name:"moduleId",type:"uint8"}],
-        outputs:[
-          {type:"bytes32"},{type:"bytes32"},{type:"bytes32"},{type:"bool"}
-        ]
+          {type:"bytes32"}, // score
+          {type:"bytes32"}, // pass1
+          {type:"bytes32"}, // pass2
+          {type:"bytes32"}, // pass3
+          {type:"bool"},
+        ],
+        stateMutability:"view", type:"function"
       },
     ];
 
-    const $ = (q)=>document.querySelector(q);
-    $("#contractShort").textContent = short(CONTRACT_ADDRESS);
-
-    const s1El=$("#s1"), s2El=$("#s2"), s3El=$("#s3");
-    const h1El=$("#h1"), h2El=$("#h2"), h3El=$("#h3");
-    const decEl=$("#decided"), tierEl=$("#tier"), scoreHEl=$("#scoreH");
-    const connectBtn=$("#connectBtn"), submitBtn=$("#submitBtn"),
-          reloadBtn=$("#reloadBtn"), setThrBtn=$("#setThr"),
-          noteEl=$("#note"), ownerEl=$("#owner"), privBtn=$("#privDecrypt");
-
-    function short(a){ return a ? a.slice(0,6) + "…" + a.slice(-4) : "—"; }
-    function tag(el, ok){
-      el.className = "tag " + (ok===true ? "ok" : ok===false ? "bad" : "");
-      el.textContent = ok===true ? "cleared" : ok===false ? "locked" : "pending";
+    /* ===== RELAYER SDK LOADER (как в The Platform) ===== */
+    const CDN_TRIES = [
+      "https://cdn.zama.org/relayer-sdk-js/0.3.0-5/relayer-sdk-js.js",
+      "https://cdn.jsdelivr.net/npm/@zama-fhe/relayer-sdk@0.2.0/dist/relayer-sdk-js.js",
+      "https://unpkg.com/@zama-fhe/relayer-sdk@0.2.0/dist/relayer-sdk-js.js",
+    ];
+    async function loadRelayerSdk(){
+      let last=null;
+      for(const url of CDN_TRIES){
+        try{
+          console.log("[SDK] trying", url);
+          const mod = await import(/* @vite-ignore */ url);
+          return mod;
+        }catch(e){
+          console.warn("[SDK] failed", url, e?.message||e);
+          last = e;
+        }
+      }
+      throw last || new Error("Relayer SDK failed to load from all CDNs");
     }
-    function note(msg){ noteEl.textContent = msg || ""; }
 
-    let provider=null, signer=null, contract=null, relayer=null, me=null, owner=null;
+    /* ===== DOM ===== */
+    const $ = id => document.getElementById(id);
+    const netLabel          = $("netLabel");
+    const contractShortEl   = $("contractShort");
+    const meLabel           = $("meLabel");
+    const connectBtn        = $("connectBtn");
+    const resetBtn          = $("resetBtn");
+    const reloadBtn         = $("reloadBtn");
+    const moduleIdInput     = $("moduleIdInput");
 
-    async function ensureSepolia(){
-      const id = await window.ethereum.request({ method:"eth_chainId" });
-      if (String(id).toLowerCase() === CHAIN_ID_HEX) return true;
-      try {
-        await window.ethereum.request({
-          method:"wallet_switchEthereumChain",
-          params:[{ chainId: CHAIN_ID_HEX }]
-        });
-      } catch (e) {
-        if (e && e.code === 4902) {
+    const stampAValue       = $("stampAValue");
+    const stampBValue       = $("stampBValue");
+    const stampCValue       = $("stampCValue");
+    const stampATag         = $("stampATag");
+    const stampBTag         = $("stampBTag");
+    const stampCTag         = $("stampCTag");
+
+    const decisionPill      = $("decisionPill");
+    const decisionDot       = $("decisionDot");
+    const decisionText      = $("decisionText");
+    const tierDot           = $("tierDot");
+    const tierText          = $("tierText");
+
+    const scoreHandleLabel  = $("scoreHandleLabel");
+    const revealScoreBtn    = $("revealScoreBtn");
+    const privateScoreText  = $("privateScoreText");
+
+    const scoreInput        = $("scoreInput");
+    const submitScoreBtn    = $("submitScoreBtn");
+    const submitStatus      = $("submitStatus");
+
+    const sdkHint           = $("sdkHint");
+
+    const t1Input           = $("t1Input");
+    const t2Input           = $("t2Input");
+    const t3Input           = $("t3Input");
+    const setThrBtn         = $("setThrBtn");
+    const thrStatus         = $("thrStatus");
+    const ownerLabel        = $("ownerLabel");
+
+    contractShortEl.textContent = shortHex(CONTRACT_ADDRESS);
+
+    /* ===== STATE ===== */
+    const state = {
+      provider:null,
+      signer:null,
+      contract:null,
+      relayer:null,
+      sdk:null,
+      owner:null,
+      lastScoreHandle:null,
+      lastStampHandles:[null,null,null],
+    };
+
+    function shortHex(addr){
+      if(!addr) return "—";
+      const s=String(addr);
+      if(s.length<=10) return s;
+      return s.slice(0,6)+"…"+s.slice(-4);
+    }
+    function isZeroHandle(h){
+      if(!h) return true;
+      const s=String(h).toLowerCase();
+      return /^0x0{64}$/.test(s);
+    }
+
+    /* ===== Helpers: chain & wallet ===== */
+    function normalizeChainId(id){
+      if(!id) return "";
+      const s=String(id);
+      if(/^\d+$/.test(s)){ return "0x"+BigInt(s).toString(16); }
+      return s.toLowerCase();
+    }
+
+    async function ensureSepoliaStrict(){
+      if(!window.ethereum?.request) return false;
+      let cur = normalizeChainId(await window.ethereum.request({method:"eth_chainId"}).catch(()=>null));
+      netLabel.textContent = cur || "unknown";
+      if(cur === CHAIN_ID_HEX) return true;
+
+      try{
+        await window.ethereum.request({ method:"wallet_switchEthereumChain", params:[{ chainId: CHAIN_ID_HEX }] });
+      }catch(e){
+        if(e?.code === 4902){
           await window.ethereum.request({
             method:"wallet_addEthereumChain",
             params:[{
-              chainId: CHAIN_ID_HEX,
+              chainId:CHAIN_ID_HEX,
               chainName:"Sepolia",
               nativeCurrency:{ name:"Sepolia ETH", symbol:"SEP", decimals:18 },
               rpcUrls:["https://rpc.sepolia.org"],
-              blockExplorerUrls:["https://sepolia.etherscan.io"]
-            }]
+              blockExplorerUrls:["https://sepolia.etherscan.io"],
+            }],
           });
-        } else { throw e; }
+          await window.ethereum.request({ method:"wallet_switchEthereumChain", params:[{ chainId: CHAIN_ID_HEX }] });
+        }else{
+          throw e;
+        }
       }
-      const after = await window.ethereum.request({ method:"eth_chainId" });
-      return String(after).toLowerCase() === CHAIN_ID_HEX;
+      cur = normalizeChainId(await window.ethereum.request({method:"eth_chainId"}).catch(()=>null));
+      netLabel.textContent = cur || "unknown";
+      return cur === CHAIN_ID_HEX;
     }
 
     async function connect(){
+      if(state.signer){ await disconnect(); return; }
       try{
-        if (!window.ethereum?.request) throw new Error("Install MetaMask");
-        await window.ethereum.request({ method:"eth_requestAccounts" });
-        await ensureSepolia();
+        if(!window.ethereum?.request){
+          alert("Please install MetaMask or another EVM wallet.");
+          return;
+        }
+        await ensureSepoliaStrict();
 
-        provider = new BrowserProvider(window.ethereum);
-        signer = await provider.getSigner();
-        me = await signer.getAddress();
+        const provider = new BrowserProvider(window.ethereum);
+        await provider.send("eth_requestAccounts",[]);
+        const signer   = await provider.getSigner();
+        const account  = await signer.getAddress();
 
-        contract = new Contract(CONTRACT_ADDRESS, ABI, signer);
+        const contract = new Contract(CONTRACT_ADDRESS, ABI, signer);
 
-        await initSDK();
-        relayer = await createInstance(SepoliaConfig);
+        const sdk = await loadRelayerSdk();
+        const { initSDK, createInstance, SepoliaConfig } = sdk;
+        if(initSDK) await initSDK();
+        const relayer = await createInstance({
+          ...SepoliaConfig,
+          relayerUrl: RELAYER_URL,
+          gatewayUrl: GATEWAY_URL,
+          network: window.ethereum,
+          debug: true,
+        });
 
-        owner = await contract.owner();
-        ownerEl.textContent = short(owner);
+        state.provider = provider;
+        state.signer   = signer;
+        state.contract = contract;
+        state.sdk      = sdk;
+        state.relayer  = relayer;
 
-        connectBtn.textContent = "Reset";
-        note("Connected");
-        await refresh();
+        meLabel.textContent = shortHex(account);
+        connectBtn.textContent = "Disconnect";
+        connectBtn.classList.remove("btn-primary");
+        connectBtn.classList.add("btn-ghost");
+
+        try{
+          const owner = await contract.owner();
+          state.owner = owner;
+          ownerLabel.textContent = shortHex(owner);
+        }catch{
+          ownerLabel.textContent = "—";
+        }
+
+        await refreshModule();
       }catch(e){
         console.error(e);
-        note(e?.message || "Connect failed");
+        alert(e?.reason || e?.shortMessage || e?.message || String(e));
       }
     }
 
-    async function refresh(){
-      if (!contract || !relayer || !signer) return;
-      const mid = Number($("#modId").value || "1");
+    async function disconnect(){
+      state.provider=null;
+      state.signer=null;
+      state.contract=null;
+      state.relayer=null;
+      state.sdk=null;
+      state.owner=null;
+      state.lastScoreHandle=null;
+      state.lastStampHandles=[null,null,null];
+
+      meLabel.textContent="not connected";
+      ownerLabel.textContent="—";
+      connectBtn.textContent="Connect wallet";
+      connectBtn.classList.add("btn-primary");
+      connectBtn.classList.remove("btn-ghost");
+
+      clearModuleUI();
+    }
+
+    function clearModuleUI(){
+      [stampATag,stampBTag,stampCTag].forEach(el=>{
+        el.className="stamp-tag pending"; el.textContent="pending";
+      });
+      [stampAValue,stampBValue,stampCValue].forEach(el=>{el.textContent="pending";});
+      decisionDot.className="dot dot-pending";
+      decisionText.textContent="not computed";
+      tierDot.className="dot dot-pending";
+      tierText.textContent="0";
+      scoreHandleLabel.textContent="—";
+      privateScoreText.textContent="—";
+    }
+
+    /* ===== PUBLIC STAMPS (ONLY publicDecrypt, как в Platform) ===== */
+    function boolFromAny(val){
+      if(val === null || val === undefined) return null;
+      if(typeof val === "boolean") return val;
+      if(typeof val === "bigint") return val !== 0n;
+      if(typeof val === "number") return val !== 0;
+      if(typeof val === "string"){
+        const t = val.toLowerCase();
+        if(t==="true"||t==="1") return true;
+        if(t==="false"||t==="0") return false;
+        try{return BigInt(val)!==0n;}catch{return null;}
+      }
+      if(Array.isArray(val) && val.length) return boolFromAny(val[0]);
+      if(typeof val === "object"){
+        const vs = Object.values(val);
+        if(vs.length) return boolFromAny(vs[0]);
+      }
+      return null;
+    }
+
+    function pickFromDecryptOut(out, handle){
+      if(!out || !handle) return null;
+      const h = String(handle).toLowerCase();
+      const cv = out.clearValues || out.values || out;
+      if(cv && typeof cv === "object"){
+        const keys = Object.keys(cv);
+        const key  = keys.find(k=>k.toLowerCase()===h);
+        if(key) return cv[key];
+      }
+      if(typeof out.abiEncodedClearValues === "string"){
+        const hex = out.abiEncodedClearValues.replace(/^0x/,"");
+        if(hex.length>=64){
+          const word="0x"+hex.slice(0,64);
+          try{return BigInt(word);}catch{}
+        }
+      }
+      return null;
+    }
+
+    async function decodeStampsWithPublicDecrypt(handles){
+      const relayer = state.relayer;
+      if(!relayer) throw new Error("Relayer not ready");
+      const nonZero = handles.filter(h=>!isZeroHandle(h));
+      if(!nonZero.length) return [null,null,null];
+
+      const pairs = nonZero.map(h=>({ handle:String(h), contractAddress:CONTRACT_ADDRESS }));
+      const out = await relayer.publicDecrypt(pairs);
+
+      return handles.map(h=>{
+        if(isZeroHandle(h)) return null;
+        const v = pickFromDecryptOut(out,h);
+        return boolFromAny(v);
+      });
+    }
+
+    /* ===== PRIVATE SCORE (userDecrypt EIP712 — как в The Platform) ===== */
+    async function userDecryptScore(handle){
+      const relayer = state.relayer;
+      const sdk     = state.sdk;
+      const signer  = state.signer;
+      if(!relayer || !sdk || !signer) throw new Error("Relayer not ready");
+
+      if(isZeroHandle(handle)) throw new Error("No score handle");
+
+      const pair = { handle:String(handle), contractAddress:CONTRACT_ADDRESS };
+      const kp = await sdk.generateKeypair();
+      const startTs = Math.floor(Date.now()/1000).toString();
+      const daysValid = "7";
+      const eip = relayer.createEIP712(kp.publicKey,[CONTRACT_ADDRESS],startTs,daysValid);
+      const sig = await signer.signTypedData(
+        eip.domain,
+        { UserDecryptRequestVerification: eip.types.UserDecryptRequestVerification },
+        eip.message
+      );
+      const account = await signer.getAddress();
+
+      const out = await relayer.userDecrypt(
+        [pair],
+        kp.privateKey,
+        kp.publicKey,
+        sig.replace("0x",""),
+        [CONTRACT_ADDRESS],
+        account,
+        startTs,
+        daysValid
+      );
+
+      const key = Object.keys(out||{}).find(k=>k.toLowerCase()===String(handle).toLowerCase());
+      if(!key) throw new Error("Empty decrypt result");
+      const raw = out[key];
+
+      let bn;
+      if(typeof raw==="bigint") bn = raw;
+      else if(typeof raw==="number") bn = BigInt(raw);
+      else if(typeof raw==="string"){
+        bn = raw.startsWith("0x") ? BigInt(raw) : BigInt(raw);
+      }else{
+        bn = BigInt(String(raw));
+      }
+      return Number(bn);
+    }
+
+    /* ===== MAIN REFRESH ===== */
+    async function refreshModule(){
       try{
-        const r = await contract.getMyModuleHandles(mid);
-        const [scoreH, p1H, p2H, p3H, decided] = r;
-        const scoreHex = String(scoreH);
-        const h1 = String(p1H), h2 = String(p2H), h3 = String(p3H);
+        if(!state.contract || !state.signer || !state.relayer) return;
 
-        scoreHEl.textContent = short(scoreHex);
-        h1El.textContent = short(h1);
-        h2El.textContent = short(h2);
-        h3El.textContent = short(h3);
-        decEl.textContent = decided ? "computed" : "—";
+        const modId = Number(moduleIdInput.value || "0");
+        if(!Number.isInteger(modId) || modId < 1 || modId > 255){
+          throw new Error("Module ID must be 1..255");
+        }
 
-        if (!decided) {
-          tag(s1El,null); tag(s2El,null); tag(s3El,null);
-          tierEl.textContent = "0";
+        const [scoreH, p1, p2, p3, decided] = await state.contract.getMyModuleHandles(modId);
+        state.lastScoreHandle = scoreH;
+        state.lastStampHandles = [p1,p2,p3];
+
+        scoreHandleLabel.textContent = isZeroHandle(scoreH) ? "—" : shortHex(scoreH);
+
+        if(!decided){
+          clearModuleUI();
           return;
         }
 
-        // --- decrypt stamps via userDecrypt (signed) ---
-        const kp = await generateKeypair();
-        const startTs = Math.floor(Date.now()/1000).toString();
-        const daysValid = "7";
+        let [b1,b2,b3] = [null,null,null];
+        try{
+          [b1,b2,b3] = await decodeStampsWithPublicDecrypt([p1,p2,p3]);
+        }catch(e){
+          console.warn("publicDecrypt failed (CORS?)", e?.message||e);
+          sdkHint.textContent = "publicDecrypt failed (likely CORS / gateway). Stamps may stay as 'pending'.";
+        }
 
-        const eip = relayer.createEIP712(
-          kp.publicKey,
-          [CONTRACT_ADDRESS],
-          startTs,
-          daysValid
-        );
+        function setStamp(tagEl, textEl, b){
+          if(b === true){
+            tagEl.className="stamp-tag ok"; tagEl.textContent="pass";
+            textEl.textContent="pass";
+          }else if(b === false){
+            tagEl.className="stamp-tag fail"; tagEl.textContent="fail";
+            textEl.textContent="fail";
+          }else{
+            tagEl.className="stamp-tag pending"; tagEl.textContent="pending";
+            textEl.textContent="pending";
+          }
+        }
+        setStamp(stampATag, stampAValue, b1);
+        setStamp(stampBTag, stampBValue, b2);
+        setStamp(stampCTag, stampCValue, b3);
 
-        const sig = await signer.signTypedData(
-          eip.domain,
-          { UserDecryptRequestVerification: eip.types.UserDecryptRequestVerification },
-          eip.message
-        );
-
-        const out = await relayer.userDecrypt(
-          [
-            { handle:h1, contractAddress: CONTRACT_ADDRESS },
-            { handle:h2, contractAddress: CONTRACT_ADDRESS },
-            { handle:h3, contractAddress: CONTRACT_ADDRESS },
-          ],
-          kp.privateKey,
-          kp.publicKey,
-          String(sig).replace(/^0x/, ""),
-          [CONTRACT_ADDRESS],
-          await signer.getAddress(),
-          startTs,
-          daysValid
-        );
-
-        const base = out || {};
-
-        const pick = (h)=>{
-          let v = base[h] ?? base[String(h).toLowerCase()];
-          try{
-            if (typeof v === "bigint") return v !== 0n;
-            if (typeof v === "number") return v !== 0;
-            if (typeof v === "string") return BigInt(v) !== 0n;
-          }catch(e){}
-          return false;
-        };
-
-        const b1 = pick(h1), b2 = pick(h2), b3 = pick(h3);
-        tag(s1El, b1); tag(s2El, b2); tag(s3El, b3);
-        tierEl.textContent = String((b1?1:0)+(b2?1:0)+(b3?1:0));
+        const tier = [b1,b2,b3].filter(v=>v===true).length;
+        tierText.textContent = String(tier);
+        tierDot.className = tier>0 ? "dot dot-ok" : "dot dot-pending";
+        decisionDot.className = "dot dot-ok";
+        decisionText.textContent = "computed";
       }catch(e){
         console.error(e);
-        note(e?.message || "Refresh failed");
+        alert(e?.message || "Failed to refresh module state");
       }
     }
 
-    async function submit(){
+    /* ===== ACTIONS ===== */
+    async function submitScore(){
       try{
-        if (!relayer || !contract || !signer) throw new Error("Connect first");
-        const mid = Number($("#modId").value || "1");
-        const val = Number($("#score").value || "0");
-        if (!Number.isInteger(val) || val < 0 || val > 65535)
-          throw new Error("Score must be 0..65535 (uint16)");
+        if(!state.contract || !state.relayer || !state.signer){
+          throw new Error("Connect wallet first");
+        }
+        submitStatus.textContent = "";
 
-        note("Encrypting…");
-        const buf = relayer.createEncryptedInput(CONTRACT_ADDRESS, await signer.getAddress());
-        buf.add16(val);
-        const { handles, inputProof } = await buf.encrypt();
+        const modId = Number(moduleIdInput.value || "0");
+        const raw = scoreInput.value.trim();
+        const score = Number(raw);
+        if(!Number.isInteger(score) || score < 0 || score > 65535){
+          throw new Error("Score must be integer 0..65535");
+        }
+        if(!Number.isInteger(modId) || modId<1 || modId>255){
+          throw new Error("Module ID must be 1..255");
+        }
 
-        note("Submitting…");
-        const tx = await contract.submitModuleScore(mid, handles[0], inputProof);
-        note("Tx: " + tx.hash.slice(0,10) + "…");
+        const sender = await state.signer.getAddress();
+        const enc = state.relayer.createEncryptedInput(CONTRACT_ADDRESS, sender);
+        enc.add16(score);
+        const { handles, inputProof } = await enc.encrypt();
+
+        const tx = await state.contract.submitModuleScore(modId, handles[0], inputProof);
+        submitStatus.textContent = "Tx: " + tx.hash.slice(0,10) + "…";
         await tx.wait();
-        note("Submitted ✓");
-        await refresh();
+        submitStatus.textContent = "Submitted ✓";
+        await refreshModule();
       }catch(e){
         console.error(e);
-        note(e?.reason || e?.shortMessage || e?.message || "Submit failed");
+        submitStatus.textContent = e?.reason || e?.shortMessage || e?.message || String(e);
+        alert(submitStatus.textContent);
       }
     }
 
     async function setThresholds(){
       try{
-        if (!relayer || !contract || !signer) throw new Error("Connect first");
-        const isOwner = owner && me && owner.toLowerCase() === me.toLowerCase();
-        if (!isOwner) throw new Error("Owner only");
+        if(!state.contract || !state.relayer || !state.signer){
+          throw new Error("Connect wallet first");
+        }
+        thrStatus.textContent = "";
 
-        const mid = Number($("#modId").value || "1");
-        const a = Number($("#t1").value || "0");
-        const b = Number($("#t2").value || "0");
-        const c = Number($("#t3").value || "0");
-        if (![a,b,c].every(x=>Number.isInteger(x) && x>=0 && x<=65535))
-          throw new Error("T1..T3 must be 0..65535 (uint16)");
+        const modId = Number(moduleIdInput.value || "0");
+        const t1 = Number(t1Input.value || "0");
+        const t2 = Number(t2Input.value || "0");
+        const t3 = Number(t3Input.value || "0");
 
-        note("Encrypting thresholds…");
-        const buf = relayer.createEncryptedInput(CONTRACT_ADDRESS, await signer.getAddress());
-        buf.add16(a); buf.add16(b); buf.add16(c);
-        const { handles, inputProof } = await buf.encrypt();
+        for(const [name,val] of [["T1",t1],["T2",t2],["T3",t3]]){
+          if(!Number.isInteger(val) || val<0 || val>65535){
+            throw new Error(name+" must be integer 0..65535");
+          }
+        }
 
-        const tx = await contract.setModuleThresholds(mid, handles[0], handles[1], handles[2], inputProof);
-        note("Policy tx: " + tx.hash.slice(0,10) + "…");
+        const sender = await state.signer.getAddress();
+        const enc = state.relayer.createEncryptedInput(CONTRACT_ADDRESS, sender);
+        enc.add16(t1); enc.add16(t2); enc.add16(t3);
+        const { handles, inputProof } = await enc.encrypt();
+
+        const tx = await state.contract.setModuleThresholds(modId, handles[0], handles[1], handles[2], inputProof);
+        thrStatus.textContent = "Tx: " + tx.hash.slice(0,10) + "…";
         await tx.wait();
-        note("Thresholds updated ✓");
+        thrStatus.textContent = "Thresholds updated ✓";
+        await refreshModule();
       }catch(e){
         console.error(e);
-        note(e?.message || "Update failed");
+        thrStatus.textContent = e?.reason || e?.shortMessage || e?.message || String(e);
+        alert(thrStatus.textContent);
       }
     }
 
-    async function userPriv(){
+    async function revealScoreSigned(){
       try{
-        if (!relayer || !signer || !contract) throw new Error("Connect first");
-        const mid = Number($("#modId").value || "1");
-        const r = await contract.getMyModuleHandles(mid);
-        const scoreH = String(r?.[0] || "");
-        if (!scoreH || /^0x0{64}$/i.test(scoreH))
-          throw new Error("No score handle yet");
+        if(!state.contract || !state.relayer || !state.signer || !state.sdk){
+          throw new Error("Connect wallet first");
+        }
+        const modId = Number(moduleIdInput.value || "0");
+        if(!Number.isInteger(modId) || modId < 1 || modId > 255){
+          throw new Error("Module ID must be 1..255");
+        }
 
-        const kp = await generateKeypair();
-        const startTs = Math.floor(Date.now()/1000).toString();
-        const daysValid = "7";
+        // всегда берём свежий handle, как в The Platform
+        const [scoreH] = await state.contract.getMyModuleHandles(modId);
+        state.lastScoreHandle = scoreH;
+        scoreHandleLabel.textContent = isZeroHandle(scoreH) ? "—" : shortHex(scoreH);
 
-        const eip = relayer.createEIP712(
-          kp.publicKey,
-          [CONTRACT_ADDRESS],
-          startTs,
-          daysValid
-        );
-
-        const sig = await signer.signTypedData(
-          eip.domain,
-          { UserDecryptRequestVerification: eip.types.UserDecryptRequestVerification },
-          eip.message
-        );
-
-        const out = await relayer.userDecrypt(
-          [{ handle: scoreH, contractAddress: CONTRACT_ADDRESS }],
-          kp.privateKey,
-          kp.publicKey,
-          String(sig).replace(/^0x/, ""),
-          [CONTRACT_ADDRESS],
-          await signer.getAddress(),
-          startTs,
-          daysValid
-        );
-
-        const v = out[scoreH] ?? out[String(scoreH).toLowerCase()];
-        note("Your (private) score: " + v);
+        const val = await userDecryptScore(scoreH);
+        privateScoreText.textContent = String(val);
       }catch(e){
         console.error(e);
-        note(e?.message || "userDecrypt failed (requires HTTPS)");
+        alert(e?.reason || e?.shortMessage || e?.message || String(e));
       }
     }
 
-    connectBtn.addEventListener("click", ()=>{ if (me) location.reload(); else connect(); });
-    submitBtn.addEventListener("click", submit);
-    reloadBtn.addEventListener("click", refresh);
+    /* ===== EVENTS ===== */
+    connectBtn.addEventListener("click", connect);
+    resetBtn.addEventListener("click", ()=>{ window.location.reload(); });
+    reloadBtn.addEventListener("click", ()=>{ refreshModule(); });
+    submitScoreBtn.addEventListener("click", submitScore);
     setThrBtn.addEventListener("click", setThresholds);
-    privBtn.addEventListener("click", userPriv);
+    revealScoreBtn.addEventListener("click", revealScoreSigned);
 
-    if (window.ethereum) {
-      window.ethereum.on?.("accountsChanged", ()=>location.reload());
-      window.ethereum.on?.("chainChanged", ()=>location.reload());
+    // авто-коннект, если уже авторизован
+    if(window.ethereum){
+      window.ethereum.on?.("accountsChanged", ()=>window.location.reload());
+      window.ethereum.on?.("chainChanged", ()=>window.location.reload());
+      (async()=>{
+        try{
+          const accs = await window.ethereum.request({ method:"eth_accounts" });
+          if(Array.isArray(accs) && accs.length){
+            await connect();
+          }
+        }catch{}
+      })();
     }
   </script>
 </body>

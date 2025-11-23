@@ -193,7 +193,7 @@
       </div>
 
       <div class="muted" style="font-size:12px">
-        Only the three stamps are public-decryptable. Your numeric score stays private.
+        Only the three stamps are public-decryptable on-chain. In this demo they are read via signed decrypt because of relayer CORS.
       </div>
     </section>
 
@@ -358,7 +358,7 @@
     }
 
     async function refresh(){
-      if (!contract || !relayer) return;
+      if (!contract || !relayer || !signer) return;
       const mid = Number($("#modId").value || "1");
       try{
         const r = await contract.getMyModuleHandles(mid);
@@ -378,10 +378,40 @@
           return;
         }
 
-        // SDK 0.3.0-5: publicDecrypt ожидает массив bytes32-хэндлов
-        const handles = [h1, h2, h3];
-        const out = await relayer.publicDecrypt(handles);
-        const base = out?.clearValues || out?.values || out || {};
+        // --- decrypt stamps via userDecrypt (signed) ---
+        const kp = await generateKeypair();
+        const startTs = Math.floor(Date.now()/1000).toString();
+        const daysValid = "7";
+
+        const eip = relayer.createEIP712(
+          kp.publicKey,
+          [CONTRACT_ADDRESS],
+          startTs,
+          daysValid
+        );
+
+        const sig = await signer.signTypedData(
+          eip.domain,
+          { UserDecryptRequestVerification: eip.types.UserDecryptRequestVerification },
+          eip.message
+        );
+
+        const out = await relayer.userDecrypt(
+          [
+            { handle:h1, contractAddress: CONTRACT_ADDRESS },
+            { handle:h2, contractAddress: CONTRACT_ADDRESS },
+            { handle:h3, contractAddress: CONTRACT_ADDRESS },
+          ],
+          kp.privateKey,
+          kp.publicKey,
+          String(sig).replace(/^0x/, ""),
+          [CONTRACT_ADDRESS],
+          await signer.getAddress(),
+          startTs,
+          daysValid
+        );
+
+        const base = out || {};
 
         const pick = (h)=>{
           let v = base[h] ?? base[String(h).toLowerCase()];
@@ -457,7 +487,7 @@
 
     async function userPriv(){
       try{
-        if (!relayer || !signer) throw new Error("Connect first");
+        if (!relayer || !signer || !contract) throw new Error("Connect first");
         const mid = Number($("#modId").value || "1");
         const r = await contract.getMyModuleHandles(mid);
         const scoreH = String(r?.[0] || "");
@@ -468,7 +498,6 @@
         const startTs = Math.floor(Date.now()/1000).toString();
         const daysValid = "7";
 
-        // В 0.3.0-5 createEIP712 доступен через инстанс relayer
         const eip = relayer.createEIP712(
           kp.publicKey,
           [CONTRACT_ADDRESS],

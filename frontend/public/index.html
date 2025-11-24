@@ -2,914 +2,1586 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Proof-of-Education</title>
+  <title>Encrypted Learning Path • Zama FHEVM</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="color-scheme" content="light" />
 
-  <!-- Требуется для Relayer SDK (WASM / workers) -->
+  <!-- Required for Relayer SDK (WASM/Workers) -->
   <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin" />
   <meta http-equiv="Cross-Origin-Embedder-Policy" content="require-corp" />
 
   <style>
-    :root{
-      --bg:#f4f6fb;
-      --bg-card:#ffffff;
-      --border:#d5ddf0;
-      --ink:#0f172a;
-      --muted:#6b7280;
-      --accent:#2563eb;
-      --accent-dark:#1d4ed8;
-      --danger:#b91c1c;
-      --success:#15803d;
-      --shadow:0 18px 40px rgba(15,23,42,.14);
-      --r-lg:20px;
-      --r-md:12px;
-      --pill:#eef2ff;
-    }
-    *{box-sizing:border-box}
-    html,body{height:100%;margin:0;padding:0}
-    body{
-      font:15px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-      background:
-        radial-gradient(1200px 600px at 50% -10%, #dbeafe 0, transparent 60%),
-        linear-gradient(180deg,#e5e7eb 0,#f9fafb 40%,#eef2ff 100%);
-      color:var(--ink);
-      display:flex;
-      flex-direction:column;
-      align-items:stretch;
-    }
-    .topbar{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      padding:10px 16px;
-      gap:10px;
-      border-bottom:1px solid #e5e7eb;
-      backdrop-filter:blur(10px);
-      background:rgba(255,255,255,.85);
-    }
-    .brand{
-      display:flex;
-      align-items:center;
-      gap:10px;
-    }
-    .logo{
-      width:32px;height:32px;border-radius:16px;
-      background:conic-gradient(from 150deg,#4f46e5,#22c55e,#38bdf8,#4f46e5);
-      display:flex;align-items:center;justify-content:center;
-      color:#eef2ff;font-weight:900;font-size:16px;
-      box-shadow:0 12px 25px rgba(79,70,229,.4);
-    }
-    .brand-main{font-weight:800;font-size:18px}
-    .brand-sub{font-size:12px;color:var(--muted)}
-    .top-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-    .pill{
-      display:inline-flex;align-items:center;gap:6px;
-      padding:5px 10px;border-radius:999px;
-      border:1px solid #e5e7eb;background:#fff;
-      font-size:12px;color:var(--muted);
-    }
-    .pill strong{color:var(--ink);font-weight:600}
-    .mono{font-family:ui-monospace,Menlo,Consolas,"SF Mono",monospace}
-
-    .btn{
-      appearance:none;border:none;cursor:pointer;
-      border-radius:999px;
-      padding:7px 14px;
-      font-size:13px;font-weight:600;
-      display:inline-flex;align-items:center;justify-content:center;gap:6px;
-      transition:.15s transform ease, .15s box-shadow ease, .15s filter ease, .15s background ease;
-    }
-    .btn-primary{
-      background:linear-gradient(135deg,var(--accent),var(--accent-dark));
-      color:#eff6ff;
-      box-shadow:0 14px 30px rgba(37,99,235,.40);
-    }
-    .btn-ghost{
-      background:#fff;color:var(--ink);
-      border:1px solid #e5e7eb;
-    }
-    .btn:hover:not(:disabled){transform:translateY(-1px);filter:brightness(1.05)}
-    .btn:disabled{opacity:.65;cursor:not-allowed;box-shadow:none;transform:none}
-
-    .layout{
-      flex:1;
-      display:grid;
-      grid-template-columns:minmax(0,1.15fr) minmax(0,1.4fr) minmax(0,1.15fr);
-      gap:16px;
-      padding:16px;
-      max-width:1440px;
-      width:100%;
-      margin:0 auto 10px;
-    }
-    .card{
-      background:var(--bg-card);
-      border-radius:var(--r-lg);
-      border:1px solid var(--border);
-      box-shadow:var(--shadow);
-      padding:14px;
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-    }
-    .card-header{
-      display:flex;align-items:center;justify-content:space-between;gap:8px;
-    }
-    .card-title{font-size:15px;font-weight:700}
-    .card-sub{font-size:12px;color:var(--muted)}
-    .section-label{
-      font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.16em;
-      margin-bottom:4px;
+    :root {
+      --bg-page: #fdfaf3;
+      --ink: #1f2933;
+      --muted: #6b7280;
+      --panel: #ffffff;
+      --border: #e5e7eb;
+      --border-strong: #d1d5db;
+      --accent: #0f766e;
+      --accent-soft: #ecfdf5;
+      --accent-alt: #f97316;
+      --accent-alt-soft: #fff7ed;
+      --danger: #b91c1c;
+      --danger-soft: #fee2e2;
+      --radius-lg: 10px;
+      --radius-md: 7px;
+      --shadow-soft: 0 10px 30px rgba(15,23,42,0.08);
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
     }
 
-    .field-col{display:flex;flex-direction:column;gap:4px;margin-bottom:6px;}
-    .field-label{font-size:13px;font-weight:600;color:#374151}
-    .input-shell{
-      display:flex;align-items:center;gap:8px;
-      border-radius:var(--r-md);
-      border:1px solid var(--border);
-      padding:8px 10px;
-      background:#f9fafb;
-    }
-    input[type="number"],input[type="text"]{
-      border:none;outline:none;background:transparent;
-      font:inherit;width:100%;
-    }
-    input::placeholder{color:#9ca3af}
-    .unit{font-size:12px;color:#9ca3af;white-space:nowrap}
+    * { box-sizing: border-box; }
 
-    .row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
-    .row-space{display:flex;justify-content:space-between;align-items:center;gap:8px}
-    .muted{font-size:12px;color:var(--muted)}
-    .status-pill{
-      display:inline-flex;align-items:center;gap:6px;
-      border-radius:999px;padding:3px 10px;
-      border:1px solid #e5e7eb;background:#f9fafb;
-      font-size:11px;color:#374151;
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
     }
-    .dot{width:8px;height:8px;border-radius:999px;background:#d1d5db}
-    .dot-ok{background:var(--success)}
-    .dot-bad{background:var(--danger)}
-    .dot-pending{background:#facc15}
 
-    .stamp-row{
-      border-radius:var(--r-md);
-      border:1px dashed #e5e7eb;
-      padding:8px 10px;
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      font-size:13px;
-      background:#f9fafb;
+    body {
+      background: var(--bg-page);
+      color: var(--ink);
+      font-family: var(--sans);
+      font-size: 14px;
+      line-height: 1.5;
     }
-    .stamp-label{font-weight:500}
-    .stamp-value{font-size:12px;color:var(--muted)}
-    .stamp-tag{
-      border-radius:999px;
-      padding:3px 10px;
-      font-size:11px;font-weight:600;
-      border:1px solid #e5e7eb;
-      background:#fff;
-    }
-    .stamp-tag.ok{border-color:#bbf7d0;background:#dcfce7;color:#166534}
-    .stamp-tag.fail{border-color:#fecaca;background:#fee2e2;color:#b91c1c}
-    .stamp-tag.pending{border-color:#e5e7eb;background:#f9fafb;color:#6b7280}
 
-    .handle-pill{
-      padding:3px 8px;border-radius:999px;
-      border:1px dashed #cbd5f5;
-      background:#eef2ff;
-      font-size:11px;
+    .app {
+      max-width: 1120px;
+      margin: 20px auto 32px;
+      padding: 0 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
     }
-    .divider{height:1px;background:linear-gradient(90deg,transparent,#e5e7eb,transparent);margin:4px 0 6px}
-    .tiny{font-size:11px;color:#9ca3af}
 
-    @media (max-width:1024px){
-      .layout{grid-template-columns:minmax(0,1fr);max-width:100%;padding:10px}
+    /* HEADER */
+    .topbar {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .brand-line1 {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .brand-line2 {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .status-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .field-chip {
+      background: var(--panel);
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      padding: 4px 10px;
+      font-size: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .field-chip span.mono {
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+
+    /* BUTTONS */
+    button {
+      font-family: inherit;
+      cursor: pointer;
+    }
+
+    .btn {
+      border-radius: 6px;
+      border: 1px solid var(--border-strong);
+      padding: 7px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      background: var(--panel);
+      color: var(--ink);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      transition: background 0.1s ease, transform 0.1s ease, box-shadow 0.1s ease;
+    }
+
+    .btn:hover:not([disabled]) {
+      background: #f9fafb;
+      transform: translateY(-1px);
+      box-shadow: 0 3px 8px rgba(15,23,42,0.08);
+    }
+
+    .btn-primary {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: white;
+    }
+
+    .btn-primary:hover:not([disabled]) {
+      background: #115e59;
+      box-shadow: 0 4px 10px rgba(15,118,110,0.35);
+    }
+
+    .btn-ghost {
+      border-style: dashed;
+      border-color: var(--border-strong);
+      background: transparent;
+    }
+
+    .btn-small {
+      padding: 5px 9px;
+      font-size: 12px;
+    }
+
+    .btn[disabled] {
+      opacity: .6;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .mono { font-family: var(--mono); }
+
+    /* MAIN LAYOUT */
+    .layout {
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr);
+      gap: 18px;
+      align-items: flex-start;
+    }
+
+    @media (max-width: 880px) {
+      .layout {
+        grid-template-columns: minmax(0,1fr);
+      }
+    }
+
+    /* SIDEBAR: module path */
+    .sidebar {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 12px 12px 10px;
+      box-shadow: var(--shadow-soft);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-height: 220px;
+    }
+
+    .sidebar-title {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .module-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .module-item {
+      display: grid;
+      grid-template-columns: 26px minmax(0, 1fr);
+      gap: 8px;
+      align-items: flex-start;
+      padding: 6px 6px;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      border: 1px solid transparent;
+    }
+
+    .module-item:hover {
+      background: #f9fafb;
+      border-color: var(--border);
+    }
+
+    .module-item.active {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .module-index {
+      width: 20px;
+      height: 20px;
+      border-radius: 999px;
+      border: 1px solid var(--border-strong);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 600;
+      background: #f9fafb;
+    }
+
+    .module-item.active .module-index {
+      border-color: var(--accent);
+      background: var(--panel);
+      color: var(--accent);
+    }
+
+    .module-body {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .module-name {
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .module-desc {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .module-status {
+      margin-top: 3px;
+      font-size: 11px;
+      color: var(--muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: #cbd5f5;
+    }
+    .status-dot.ready { background: #10b981; }
+    .status-dot.locked { background: #9ca3af; }
+    .status-dot.done { background: #0ea5e9; }
+
+    .sidebar-note {
+      font-size: 11px;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+      padding-top: 6px;
+    }
+
+    /* MAIN PANELS */
+    .main {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .block {
+      background: var(--panel);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-soft);
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .block-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .block-title {
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .block-sub {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .block-tag {
+      font-size: 11px;
+      padding: 3px 7px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: #f9fafb;
+      color: var(--muted);
+    }
+
+    .block-tag.ok {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      color: #166534;
+    }
+
+    .block-tag.warn {
+      border-color: #eab308;
+      background: #fefce8;
+      color: #854d0e;
+    }
+
+    .block-tag.err {
+      border-color: var(--danger);
+      background: var(--danger-soft);
+      color: var(--danger);
+    }
+
+    .row {
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .flex-1 { flex: 1 1 0; }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .field-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #374151;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .badge {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 1px 5px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+
+    .input-shell {
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-strong);
+      padding: 6px 8px;
+      background: #f9fafb;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .input-shell input {
+      border: none;
+      outline: none;
+      background: transparent;
+      width: 100%;
+      font-size: 14px;
+      font-family: inherit;
+      padding: 2px 0;
+      color: var(--ink);
+    }
+
+    .input-shell input::placeholder {
+      color: #9ca3af;
+    }
+
+    .input-unit {
+      font-size: 11px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .helper {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .divider {
+      height: 1px;
+      background: linear-gradient(to right, transparent, var(--border), transparent);
+      margin: 4px 0;
+    }
+
+    /* RESULT GRID */
+    .grid-two {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 10px;
+    }
+
+    @media (max-width: 720px) {
+      .grid-two {
+        grid-template-columns: minmax(0,1fr);
+      }
+    }
+
+    .result-box {
+      border-radius: var(--radius-md);
+      border: 1px dashed var(--border);
+      padding: 8px 9px;
+      font-size: 13px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      background: #f9fafb;
+    }
+
+    .result-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+    }
+
+    .result-value {
+      font-family: var(--mono);
+      font-size: 13px;
+    }
+
+    .result-value.positive {
+      color: #166534;
+    }
+
+    .result-value.negative {
+      color: var(--danger);
+    }
+
+    .small-note {
+      font-size: 11px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    /* LOG */
+    .log-box {
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+      padding: 8px 9px;
+      background: #0f172a;
+      color: #e5e7eb;
+      font-family: var(--mono);
+      font-size: 11px;
+      white-space: pre-wrap;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .text-danger {
+      color: var(--danger);
+    }
+    .text-muted {
+      color: var(--muted);
     }
   </style>
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand">
-      <div class="logo">E</div>
-      <div>
-        <div class="brand-main">Proof-of-Education</div>
-        <div class="brand-sub">Encrypted modules · public tier stamps (no circles)</div>
+  <div class="app">
+    <!-- HEADER -->
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-line1">Encrypted Learning Path</div>
+        <div class="brand-line2">Private module completion • Zama FHEVM + Relayer SDK</div>
       </div>
-    </div>
-    <div class="top-right">
-      <div class="pill">
-        Net: <strong class="mono" id="netLabel">—</strong>
-      </div>
-      <div class="pill">
-        Contract: <span class="mono" id="contractShort">—</span>
-      </div>
-      <div class="pill">
-        You: <span class="mono" id="meLabel">not connected</span>
-      </div>
-      <button id="connectBtn" class="btn btn-primary">Connect wallet</button>
-      <button id="resetBtn" class="btn btn-ghost">Reset</button>
-    </div>
-  </header>
-
-  <main class="layout">
-    <!-- LEFT: MODULE STATUS -->
-    <section class="card">
-      <div class="card-header">
-        <div>
-          <div class="card-title">Module status</div>
-          <div class="card-sub">Tier stamps are public, raw score stays private.</div>
+      <div class="status-row">
+        <div class="field-chip">
+          Network: <span id="netLabel" class="mono">—</span>
         </div>
-        <button id="reloadBtn" class="btn btn-ghost" style="font-size:12px;">Reload</button>
-      </div>
-
-      <div class="field-col">
-        <div class="field-label">Module ID (u8)</div>
-        <div class="input-shell" style="max-width:180px;">
-          <input id="moduleIdInput" type="number" min="1" max="255" value="1" />
-          <span class="unit">ID</span>
+        <div class="field-chip">
+          Contract: <span id="contractLabel" class="mono">—</span>
         </div>
-      </div>
-
-      <div class="section-label">Stamps</div>
-
-      <div class="stamp-row">
-        <div>
-          <div class="stamp-label">Stamp A — score ≥ T1</div>
-          <div class="stamp-value" id="stampAValue">pending</div>
+        <div class="field-chip">
+          You: <span id="accountLabel" class="mono">not connected</span>
         </div>
-        <div class="stamp-tag pending" id="stampATag">pending</div>
+        <button id="connectBtn" class="btn btn-primary">Connect wallet</button>
       </div>
+    </header>
 
-      <div class="stamp-row">
-        <div>
-          <div class="stamp-label">Stamp B — score ≥ T2</div>
-          <div class="stamp-value" id="stampBValue">pending</div>
+    <div class="layout">
+      <!-- SIDEBAR: course modules -->
+      <aside class="sidebar">
+        <div class="sidebar-title">Course modules</div>
+        <ol id="moduleList" class="module-list">
+          <!-- Filled by JS -->
+        </ol>
+        <div class="sidebar-note">
+          The contract only sees encrypted scores and pass flags. This sidebar is
+          a local view of your path; unlocking is derived from your decrypted results.
         </div>
-        <div class="stamp-tag pending" id="stampBTag">pending</div>
-      </div>
+      </aside>
 
-      <div class="stamp-row">
-        <div>
-          <div class="stamp-label">Stamp C — score ≥ T3</div>
-          <div class="stamp-value" id="stampCValue">pending</div>
-        </div>
-        <div class="stamp-tag pending" id="stampCTag">pending</div>
-      </div>
-
-      <div class="divider"></div>
-
-      <div class="row-space">
-        <div class="field-col" style="margin-bottom:0">
-          <div class="field-label">Decision</div>
-          <div class="status-pill" id="decisionPill">
-            <span class="dot dot-pending" id="decisionDot"></span>
-            <span id="decisionText">not computed</span>
+      <!-- MAIN -->
+      <main class="main">
+        <!-- BLOCK 1: submit attempt -->
+        <section class="block">
+          <div class="block-header">
+            <div>
+              <div class="block-title">1. Submit encrypted module attempt</div>
+              <div class="block-sub">
+                Choose a module and send an encrypted score. The contract evaluates pass/fail fully under FHE.
+              </div>
+            </div>
+            <span id="moduleMetaTag" class="block-tag">module: n/a</span>
           </div>
-        </div>
-        <div class="field-col" style="margin-bottom:0;text-align:right;">
-          <div class="field-label">Tier</div>
-          <div class="status-pill">
-            <span class="dot dot-pending" id="tierDot"></span>
-            <span id="tierText">0</span>
+
+          <div class="row">
+            <div class="field-group flex-1">
+              <div class="field-label">
+                Active module
+              </div>
+              <div class="input-shell">
+                <select id="moduleSelect" style="border:none;outline:none;background:transparent;width:100%;font-size:14px;font-family:inherit;">
+                  <!-- options from JS -->
+                </select>
+              </div>
+            </div>
+            <div class="field-group" style="width:160px;">
+              <div class="field-label">
+                Score
+                <span class="badge">uint16 • encrypted</span>
+              </div>
+              <div class="input-shell">
+                <input id="scoreInput" type="number" min="0" max="65535" placeholder="e.g. 82" />
+                <span class="input-unit">points</span>
+              </div>
+            </div>
+            <button id="submitAttemptBtn" class="btn btn-primary">Encrypt &amp; submit</button>
           </div>
-        </div>
-      </div>
 
-      <div class="divider"></div>
+          <div id="submitStatus" class="helper"></div>
+        </section>
 
-      <div class="field-col" style="margin-bottom:0">
-        <div class="field-label">Raw score handle</div>
-        <div class="row" style="align-items:center;">
-          <span class="handle-pill mono" id="scoreHandleLabel">—</span>
-        </div>
-      </div>
+        <!-- BLOCK 2: private result -->
+        <section class="block">
+          <div class="block-header">
+            <div>
+              <div class="block-title">2. Inspect your encrypted result</div>
+              <div class="block-sub">
+                Decrypt your own score and pass flag with EIP-712 signing. The cleartext never touches the contract.
+              </div>
+            </div>
+            <span id="decryptTag" class="block-tag warn">private decrypt: HTTPS recommended</span>
+          </div>
 
-      <div class="row">
-        <button id="revealScoreBtn" class="btn btn-ghost">Reveal my score (signed)</button>
-        <div class="muted">Your (private) score: <b id="privateScoreText">—</b></div>
-      </div>
+          <div class="row">
+            <button id="decryptPrivateBtn" class="btn btn-ghost btn-small">
+              Decrypt for me (signed)
+            </button>
+            <div class="helper" id="decryptHint">
+              The app uses userDecrypt from the Relayer SDK with a short-lived keypair.
+            </div>
+          </div>
 
-      <div class="tiny">
-        Only the three stamps are public-decryptable via Relayer.  
-        In this demo the numeric score is read via signed user decrypt (EIP-712), as in “The Platform”.
-      </div>
-    </section>
+          <div class="grid-two">
+            <div class="result-box">
+              <div class="result-label">Last decrypted score</div>
+              <div id="resultScore" class="result-value">—</div>
+              <div class="helper" id="resultScoreHandle">Handle: —</div>
+            </div>
+            <div class="result-box">
+              <div class="result-label">Last decrypted pass flag</div>
+              <div id="resultPass" class="result-value">—</div>
+              <div class="helper" id="resultPassHandle">Handle: —</div>
+            </div>
+          </div>
 
-    <!-- CENTER: SUBMIT SCORE -->
-    <section class="card">
-      <div class="card-header">
-        <div>
-          <div class="card-title">Submit encrypted score</div>
-          <div class="card-sub">Encrypt in browser → contract compares vs encrypted thresholds.</div>
-        </div>
-      </div>
+          <div class="small-note">
+            <span>“Passed” is stored as an encrypted boolean on-chain.</span>
+            <span id="localUnlockNote"></span>
+          </div>
+        </section>
 
-      <div class="field-col">
-        <div class="field-label">Score (uint16)</div>
-        <div class="input-shell">
-          <input id="scoreInput" type="number" min="0" max="65535" placeholder="e.g. 87" />
-          <span class="unit">points</span>
-        </div>
-      </div>
+        <!-- BLOCK 3: public certificate -->
+        <section class="block">
+          <div class="block-header">
+            <div>
+              <div class="block-title">3. Public certificate (opt-in)</div>
+              <div class="block-sub">
+                Make your pass flag globally decryptable, then anyone can verify completion for a given address and module.
+              </div>
+            </div>
+            <span id="certTag" class="block-tag">certificate: private</span>
+          </div>
 
-      <div class="row">
-        <button id="submitScoreBtn" class="btn btn-primary">Encrypt &amp; Submit</button>
-        <div class="muted" id="submitStatus"></div>
-      </div>
+          <div class="row">
+            <button id="makePublicBtn" class="btn btn-small">
+              Enable public certificate for active module
+            </button>
+            <div id="makePublicStatus" class="helper"></div>
+          </div>
 
-      <div class="divider"></div>
-      <div class="section-label">Flow</div>
-      <div class="muted">
-        The Relayer SDK creates an encrypted input for your score.  
-        The contract evaluates it fully homomorphically against encrypted thresholds
-        and updates your public stamps.
-      </div>
+          <div class="divider"></div>
 
-      <div class="divider"></div>
-      <div class="section-label">SDK / CORS</div>
-      <div class="tiny" id="sdkHint">
-        If the SDK fails to load, check VPN/firewall and that at least one CDN is reachable:
-        <code>cdn.zama.org</code>, <code>cdn.jsdelivr.net</code>, <code>unpkg.com</code>.
-      </div>
-    </section>
+          <div class="row">
+            <div class="field-group flex-1">
+              <div class="field-label">Learner address</div>
+              <div class="input-shell">
+                <input id="checkAddressInput" type="text" placeholder="0x…" />
+              </div>
+            </div>
+            <div class="field-group" style="width:130px;">
+              <div class="field-label">Module ID</div>
+              <div class="input-shell">
+                <input id="checkModuleInput" type="number" min="1" value="1" />
+              </div>
+            </div>
+            <button id="checkCertBtn" class="btn btn-ghost btn-small">
+              Check public certificate
+            </button>
+          </div>
 
-    <!-- RIGHT: ADMIN -->
-    <section class="card">
-      <div class="card-header">
-        <div>
-          <div class="card-title">Admin · encrypted thresholds</div>
-          <div class="card-sub">Owner-only: thresholds remain encrypted on-chain.</div>
-        </div>
-      </div>
+          <div class="grid-two">
+            <div class="result-box">
+              <div class="result-label">Public certificate status</div>
+              <div id="certResult" class="result-value">—</div>
+            </div>
+            <div class="result-box">
+              <div class="result-label">Raw pass handle</div>
+              <div id="certHandle" class="result-value mono" style="font-size:11px;word-break:break-all;">—</div>
+            </div>
+          </div>
+        </section>
 
-      <div class="section-label">Thresholds for current module</div>
+        <!-- BLOCK 3.5: admin – configure modules -->
+        <section class="block" id="adminBlock">
+          <div class="block-header">
+            <div>
+              <div class="block-title">Admin · Configure modules</div>
+              <div class="block-sub">
+                Owner-only: set encrypted passing scores for each module ID.
+              </div>
+            </div>
+            <span class="block-tag" id="adminOwnerTag">role: unknown</span>
+          </div>
 
-      <div class="field-col">
-        <div class="field-label">T1 (uint16)</div>
-        <div class="input-shell">
-          <input id="t1Input" type="number" min="0" max="65535" value="50" />
-          <span class="unit">points</span>
-        </div>
-      </div>
-      <div class="field-col">
-        <div class="field-label">T2 (uint16)</div>
-        <div class="input-shell">
-          <input id="t2Input" type="number" min="0" max="65535" value="120" />
-          <span class="unit">points</span>
-        </div>
-      </div>
-      <div class="field-col">
-        <div class="field-label">T3 (uint16)</div>
-        <div class="input-shell">
-          <input id="t3Input" type="number" min="0" max="65535" value="250" />
-          <span class="unit">points</span>
-        </div>
-      </div>
+          <div class="row">
+            <div class="field-group flex-1">
+              <div class="field-label">Module ID</div>
+              <div class="input-shell">
+                <input id="adminModuleId" type="number" min="1" value="1" />
+              </div>
+            </div>
+            <div class="field-group flex-1">
+              <div class="field-label">Prerequisite module ID</div>
+              <div class="input-shell">
+                <input id="adminPrereqId" type="number" min="0" value="0" />
+              </div>
+            </div>
+            <div class="field-group flex-1">
+              <div class="field-label">
+                Passing score
+                <span class="badge">uint16 · encrypted</span>
+              </div>
+              <div class="input-shell">
+                <input id="adminPassingScore" type="number" min="0" max="65535" placeholder="e.g. 60" />
+                <span class="input-unit">points</span>
+              </div>
+            </div>
+            <button id="adminSetModuleBtn" class="btn btn-small">
+              Encrypt &amp; create / update
+            </button>
+          </div>
 
-      <div class="row">
-        <button id="setThrBtn" class="btn btn-primary">Encrypt &amp; Update</button>
-        <div class="muted" id="thrStatus"></div>
-      </div>
+          <div id="adminStatus" class="helper"></div>
+        </section>
 
-      <div class="divider"></div>
-      <div class="muted">
-        Owner: <span class="mono" id="ownerLabel">—</span>
-      </div>
-    </section>
-  </main>
+        <!-- BLOCK 4: technical log -->
+        <section class="block">
+          <div class="block-header">
+            <div class="block-title">Technical log</div>
+            <button id="reloadBtn" class="btn btn-small btn-ghost">Reload state</button>
+          </div>
+          <div id="log" class="log-box"></div>
+        </section>
+      </main>
+    </div>
+  </div>
 
+  <!-- Ethers + Relayer SDK -->
   <script type="module">
     import { BrowserProvider, Contract } from "https://cdn.jsdelivr.net/npm/ethers@6.15.0/+esm";
+    import { initSDK, createInstance, SepoliaConfig, generateKeypair } from "https://cdn.zama.org/relayer-sdk-js/0.3.0-5/relayer-sdk-js.js";
 
-    /* ===== CONFIG ===== */
-    const CONTRACT_ADDRESS = "0x0A89386172E7E5455b3a3b5f60b1797E04d8C8B0";
-    const CHAIN_ID_HEX = "0xaa36a7"; // Sepolia
-    const CHAIN_ID_DEC = 11155111n;
+    await initSDK();
+
+    /* ---------- CONFIG ---------- */
+    const CONTRACT_ADDRESS = "0x040Bdf8c95d5EaAEecAF23c8A2e625f218c73c79";
+    const CHAIN_ID_HEX = "0xaa36a7"; // Ethereum Sepolia
 
     const ORIGIN = window.location.origin;
     const HAS_LOCAL_PROXY = ORIGIN.includes("localhost:3443") || ORIGIN.includes("127.0.0.1:3443");
-    const RELAYER_URL = HAS_LOCAL_PROXY ? ORIGIN + "/relayer" : "https://relayer.testnet.zama.org";
-    const GATEWAY_URL = HAS_LOCAL_PROXY ? ORIGIN + "/gateway" : "https://gateway.testnet.zama.org";
+    const RELAYER_URL = HAS_LOCAL_PROXY ? `${ORIGIN}/relayer` : "https://relayer.testnet.zama.org";
+    const GATEWAY_URL = HAS_LOCAL_PROXY ? `${ORIGIN}/gateway` : "https://gateway.testnet.zama.org";
 
+    const IS_HTTPS = location.protocol === "https:";
+
+    // ABI for EncryptedCourseProgress
     const ABI = [
-      { inputs:[], name:"owner", outputs:[{type:"address"}], stateMutability:"view", type:"function" },
-      { inputs:[{name:"newOwner", type:"address"}], name:"transferOwnership", outputs:[], stateMutability:"nonpayable", type:"function" },
+      { type:"function", name:"owner", stateMutability:"view", inputs:[], outputs:[{type:"address"}] },
+      { type:"function", name:"transferOwnership", stateMutability:"nonpayable", inputs:[{name:"newOwner", type:"address"}], outputs:[] },
 
-      {
-        inputs:[
-          {name:"moduleId", type:"uint8"},
-          {name:"t1", type:"bytes32"},
-          {name:"t2", type:"bytes32"},
-          {name:"t3", type:"bytes32"},
-          {name:"proof", type:"bytes"},
-        ],
-        name:"setModuleThresholds", outputs:[], stateMutability:"nonpayable", type:"function"
-      },
-      {
-        inputs:[
-          {name:"moduleId", type:"uint8"},
-          {name:"encScore", type:"bytes32"},
-          {name:"proof", type:"bytes"},
-        ],
-        name:"submitModuleScore", outputs:[], stateMutability:"nonpayable", type:"function"
-      },
-      {
-        inputs:[{name:"moduleId", type:"uint8"}],
-        name:"getMyModuleHandles",
-        outputs:[
-          {type:"bytes32"}, // score
-          {type:"bytes32"}, // pass1
-          {type:"bytes32"}, // pass2
-          {type:"bytes32"}, // pass3
+      { type:"function", name:"createModule", stateMutability:"nonpayable", inputs:[
+          {name:"moduleId", type:"uint256"},
+          {name:"prerequisiteModuleId", type:"uint256"},
+          {name:"encPassingScore", type:"bytes32"},
+          {name:"proof", type:"bytes"}
+        ], outputs:[] },
+
+      { type:"function", name:"updateModule", stateMutability:"nonpayable", inputs:[
+          {name:"moduleId", type:"uint256"},
+          {name:"newPrerequisiteModuleId", type:"uint256"},
+          {name:"encPassingScore", type:"bytes32"},
+          {name:"proof", type:"bytes"}
+        ], outputs:[] },
+
+      { type:"function", name:"getModuleMeta", stateMutability:"view", inputs:[
+          {name:"moduleId", type:"uint256"}
+        ], outputs:[
           {type:"bool"},
-        ],
-        stateMutability:"view", type:"function"
-      },
+          {type:"uint256"}
+        ] },
+
+      { type:"function", name:"submitModuleAttempt", stateMutability:"nonpayable", inputs:[
+          {name:"moduleId", type:"uint256"},
+          {name:"encScore", type:"bytes32"},
+          {name:"proof", type:"bytes"}
+        ], outputs:[] },
+
+      { type:"function", name:"enablePublicCertificate", stateMutability:"nonpayable", inputs:[
+          {name:"moduleId", type:"uint256"}
+        ], outputs:[] },
+
+      { type:"function", name:"getMyModuleHandles", stateMutability:"view", inputs:[
+          {name:"moduleId", type:"uint256"}
+        ], outputs:[
+          {type:"bytes32"},
+          {type:"bytes32"},
+          {type:"bool"}
+        ] },
+
+      { type:"function", name:"getModulePassHandlePublic", stateMutability:"view", inputs:[
+          {name:"learner", type:"address"},
+          {name:"moduleId", type:"uint256"}
+        ], outputs:[
+          {type:"bytes32"},
+          {type:"bool"}
+        ] },
+
+      { type:"function", name:"getModulePolicyHandle", stateMutability:"view", inputs:[
+          {name:"moduleId", type:"uint256"}
+        ], outputs:[
+          {type:"bytes32"}
+        ] }
     ];
 
-    /* ===== RELAYER SDK LOADER (как в The Platform) ===== */
-    const CDN_TRIES = [
-      "https://cdn.zama.org/relayer-sdk-js/0.3.0-5/relayer-sdk-js.js",
-      "https://cdn.jsdelivr.net/npm/@zama-fhe/relayer-sdk@0.2.0/dist/relayer-sdk-js.js",
-      "https://unpkg.com/@zama-fhe/relayer-sdk@0.2.0/dist/relayer-sdk-js.js",
+    // A simple frontend-only course map (names only, contract cares only about IDs)
+    const COURSE_MODULES = [
+      { id: 1, name: "Module 1 · FHE basics", desc: "Warm-up quiz on encrypted computation." },
+      { id: 2, name: "Module 2 · Encrypted scores", desc: "Scoring logic and comparison under FHE." },
+      { id: 3, name: "Module 3 · Access control", desc: "ACL, user decrypt and public flags." },
+      { id: 4, name: "Module 4 · Capstone", desc: "Final assignment and certificate." }
     ];
-    async function loadRelayerSdk(){
-      let last=null;
-      for(const url of CDN_TRIES){
-        try{
-          console.log("[SDK] trying", url);
-          const mod = await import(/* @vite-ignore */ url);
-          return mod;
-        }catch(e){
-          console.warn("[SDK] failed", url, e?.message||e);
-          last = e;
-        }
-      }
-      throw last || new Error("Relayer SDK failed to load from all CDNs");
-    }
 
-    /* ===== DOM ===== */
-    const $ = id => document.getElementById(id);
-    const netLabel          = $("netLabel");
-    const contractShortEl   = $("contractShort");
-    const meLabel           = $("meLabel");
+    /* ---------- DOM ---------- */
+    const $ = (id) => document.getElementById(id);
+
+    const netLabelEl        = $("netLabel");
+    const contractLabelEl   = $("contractLabel");
+    const accountLabelEl    = $("accountLabel");
     const connectBtn        = $("connectBtn");
-    const resetBtn          = $("resetBtn");
+
+    const moduleListEl      = $("moduleList");
+    const moduleSelectEl    = $("moduleSelect");
+    const moduleMetaTagEl   = $("moduleMetaTag");
+
+    const scoreInputEl      = $("scoreInput");
+    const submitAttemptBtn  = $("submitAttemptBtn");
+    const submitStatusEl    = $("submitStatus");
+
+    const decryptPrivateBtn = $("decryptPrivateBtn");
+    const decryptHintEl     = $("decryptHint");
+    const decryptTagEl      = $("decryptTag");
+    const resultScoreEl     = $("resultScore");
+    const resultScoreHandleEl = $("resultScoreHandle");
+    const resultPassEl      = $("resultPass");
+    const resultPassHandleEl = $("resultPassHandle");
+    const localUnlockNoteEl = $("localUnlockNote");
+
+    const makePublicBtn     = $("makePublicBtn");
+    const makePublicStatusEl= $("makePublicStatus");
+    const certTagEl         = $("certTag");
+    const checkAddressInputEl = $("checkAddressInput");
+    const checkModuleInputEl  = $("checkModuleInput");
+    const checkCertBtn      = $("checkCertBtn");
+    const certResultEl      = $("certResult");
+    const certHandleEl      = $("certHandle");
+
+    const adminOwnerTagEl     = $("adminOwnerTag");
+    const adminModuleIdEl     = $("adminModuleId");
+    const adminPrereqIdEl     = $("adminPrereqId");
+    const adminPassingScoreEl = $("adminPassingScore");
+    const adminSetModuleBtn   = $("adminSetModuleBtn");
+    const adminStatusEl       = $("adminStatus");
+
     const reloadBtn         = $("reloadBtn");
-    const moduleIdInput     = $("moduleIdInput");
+    const logEl             = $("log");
 
-    const stampAValue       = $("stampAValue");
-    const stampBValue       = $("stampBValue");
-    const stampCValue       = $("stampCValue");
-    const stampATag         = $("stampATag");
-    const stampBTag         = $("stampBTag");
-    const stampCTag         = $("stampCTag");
+    contractLabelEl.textContent = shortAddress(CONTRACT_ADDRESS);
 
-    const decisionPill      = $("decisionPill");
-    const decisionDot       = $("decisionDot");
-    const decisionText      = $("decisionText");
-    const tierDot           = $("tierDot");
-    const tierText          = $("tierText");
-
-    const scoreHandleLabel  = $("scoreHandleLabel");
-    const revealScoreBtn    = $("revealScoreBtn");
-    const privateScoreText  = $("privateScoreText");
-
-    const scoreInput        = $("scoreInput");
-    const submitScoreBtn    = $("submitScoreBtn");
-    const submitStatus      = $("submitStatus");
-
-    const sdkHint           = $("sdkHint");
-
-    const t1Input           = $("t1Input");
-    const t2Input           = $("t2Input");
-    const t3Input           = $("t3Input");
-    const setThrBtn         = $("setThrBtn");
-    const thrStatus         = $("thrStatus");
-    const ownerLabel        = $("ownerLabel");
-
-    contractShortEl.textContent = shortHex(CONTRACT_ADDRESS);
-
-    /* ===== STATE ===== */
+    /* ---------- STATE ---------- */
     const state = {
-      provider:null,
-      signer:null,
-      contract:null,
-      relayer:null,
-      sdk:null,
-      owner:null,
-      lastScoreHandle:null,
-      lastStampHandles:[null,null,null],
+      provider: null,
+      signer: null,
+      contract: null,
+      relayer: null,
+      userAddress: null,
+      owner: null,
+      activeModuleId: COURSE_MODULES[0].id,
+      passedModules: new Set() // purely local, updated when decrypted
     };
 
-    function shortHex(addr){
-      if(!addr) return "—";
-      const s=String(addr);
-      if(s.length<=10) return s;
-      return s.slice(0,6)+"…"+s.slice(-4);
-    }
-    function isZeroHandle(h){
-      if(!h) return true;
-      const s=String(h).toLowerCase();
-      return /^0x0{64}$/.test(s);
+    /* ---------- HELPERS ---------- */
+    function appendLog(...parts) {
+      const msg = parts.map(x => typeof x === "string" ? x : JSON.stringify(x, null, 2)).join(" ");
+      logEl.textContent += msg + "\n";
+      logEl.scrollTop = logEl.scrollHeight;
+      console.log("[log]", ...parts);
     }
 
-    /* ===== Helpers: chain & wallet ===== */
-    function normalizeChainId(id){
-      if(!id) return "";
-      const s=String(id);
-      if(/^\d+$/.test(s)){ return "0x"+BigInt(s).toString(16); }
+    function shortAddress(addr) {
+      if (!addr) return "—";
+      return addr.slice(0, 6) + "…" + addr.slice(-4);
+    }
+
+    function normalizeChainId(id) {
+      if (!id) return "";
+      const s = String(id);
+      if (/^\d+$/.test(s)) {
+        return "0x" + BigInt(s).toString(16);
+      }
       return s.toLowerCase();
     }
 
-    async function ensureSepoliaStrict(){
-      if(!window.ethereum?.request) return false;
-      let cur = normalizeChainId(await window.ethereum.request({method:"eth_chainId"}).catch(()=>null));
-      netLabel.textContent = cur || "unknown";
-      if(cur === CHAIN_ID_HEX) return true;
-
-      try{
-        await window.ethereum.request({ method:"wallet_switchEthereumChain", params:[{ chainId: CHAIN_ID_HEX }] });
-      }catch(e){
-        if(e?.code === 4902){
+    async function ensureSepolia() {
+      if (!window.ethereum?.request) return false;
+      let cur = normalizeChainId(
+        await window.ethereum.request({ method: "eth_chainId" }).catch(() => null)
+      );
+      netLabelEl.textContent = cur || "unknown";
+      if (cur === CHAIN_ID_HEX) return true;
+      try {
+        await window.ethereum.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: CHAIN_ID_HEX }]
+        });
+      } catch (e) {
+        if (e && e.code === 4902) {
           await window.ethereum.request({
-            method:"wallet_addEthereumChain",
-            params:[{
-              chainId:CHAIN_ID_HEX,
-              chainName:"Sepolia",
-              nativeCurrency:{ name:"Sepolia ETH", symbol:"SEP", decimals:18 },
-              rpcUrls:["https://rpc.sepolia.org"],
-              blockExplorerUrls:["https://sepolia.etherscan.io"],
-            }],
+            method: "wallet_addEthereumChain",
+            params: [{
+              chainId: CHAIN_ID_HEX,
+              chainName: "Sepolia",
+              nativeCurrency: { name: "Sepolia ETH", symbol: "SEP", decimals: 18 },
+              rpcUrls: ["https://rpc.sepolia.org"],
+              blockExplorerUrls: ["https://sepolia.etherscan.io"]
+            }]
           });
-          await window.ethereum.request({ method:"wallet_switchEthereumChain", params:[{ chainId: CHAIN_ID_HEX }] });
-        }else{
+          await window.ethereum.request({
+            method: "wallet_switchEthereumChain",
+            params: [{ chainId: CHAIN_ID_HEX }]
+          });
+        } else {
           throw e;
         }
       }
-      cur = normalizeChainId(await window.ethereum.request({method:"eth_chainId"}).catch(()=>null));
-      netLabel.textContent = cur || "unknown";
-      return cur === CHAIN_ID_HEX;
+      const after = normalizeChainId(
+        await window.ethereum.request({ method: "eth_chainId" }).catch(() => null)
+      );
+      netLabelEl.textContent = after || "unknown";
+      return after === CHAIN_ID_HEX;
     }
 
-    async function connect(){
-      if(state.signer){ await disconnect(); return; }
-      try{
-        if(!window.ethereum?.request){
-          alert("Please install MetaMask or another EVM wallet.");
-          return;
-        }
-        await ensureSepoliaStrict();
-
-        const provider = new BrowserProvider(window.ethereum);
-        await provider.send("eth_requestAccounts",[]);
-        const signer   = await provider.getSigner();
-        const account  = await signer.getAddress();
-
-        const contract = new Contract(CONTRACT_ADDRESS, ABI, signer);
-
-        const sdk = await loadRelayerSdk();
-        const { initSDK, createInstance, SepoliaConfig } = sdk;
-        if(initSDK) await initSDK();
-        const relayer = await createInstance({
-          ...SepoliaConfig,
-          relayerUrl: RELAYER_URL,
-          gatewayUrl: GATEWAY_URL,
-          network: window.ethereum,
-          debug: true,
+    function buildValuePicker(out, pairs) {
+      let map = {};
+      const cv = out && out.clearValues;
+      if (Array.isArray(cv) && pairs && pairs.length) {
+        pairs.forEach((p, i) => {
+          const h = String(p.handle || p).toLowerCase();
+          map[h] = cv[i];
         });
-
-        state.provider = provider;
-        state.signer   = signer;
-        state.contract = contract;
-        state.sdk      = sdk;
-        state.relayer  = relayer;
-
-        meLabel.textContent = shortHex(account);
-        connectBtn.textContent = "Disconnect";
-        connectBtn.classList.remove("btn-primary");
-        connectBtn.classList.add("btn-ghost");
-
-        try{
-          const owner = await contract.owner();
-          state.owner = owner;
-          ownerLabel.textContent = shortHex(owner);
-        }catch{
-          ownerLabel.textContent = "—";
+      }
+      if (!Object.keys(map).length && typeof out?.abiEncodedClearValues === "string") {
+        const hex = out.abiEncodedClearValues.startsWith("0x")
+          ? out.abiEncodedClearValues.slice(2)
+          : out.abiEncodedClearValues;
+        const vals = [];
+        for (let i = 0; i + 64 <= hex.length; i += 64) {
+          vals.push("0x" + hex.slice(i, i + 64));
         }
-
-        await refreshModule();
-      }catch(e){
-        console.error(e);
-        alert(e?.reason || e?.shortMessage || e?.message || String(e));
+        pairs.forEach((p, i) => {
+          const h = String(p.handle || p).toLowerCase();
+          try {
+            map[h] = BigInt(vals[i] || 0);
+          } catch {
+            map[h] = 0n;
+          }
+        });
       }
+      if (!Object.keys(map).length && out && typeof out === "object") {
+        map = out;
+      }
+      return (handle) => {
+        if (!handle) return null;
+        const k1 = String(handle);
+        const k2 = k1.toLowerCase();
+        let v = map[k2] ?? map[k1] ?? null;
+        try {
+          if (v == null) return null;
+          if (typeof v === "bigint" || typeof v === "number") return BigInt(v);
+          if (typeof v === "string") {
+            return v.startsWith("0x") ? BigInt(v) : BigInt(v);
+          }
+          return BigInt(v.toString());
+        } catch {
+          return 0n;
+        }
+      };
     }
 
-    async function disconnect(){
-      state.provider=null;
-      state.signer=null;
-      state.contract=null;
-      state.relayer=null;
-      state.sdk=null;
-      state.owner=null;
-      state.lastScoreHandle=null;
-      state.lastStampHandles=[null,null,null];
-
-      meLabel.textContent="not connected";
-      ownerLabel.textContent="—";
-      connectBtn.textContent="Connect wallet";
-      connectBtn.classList.add("btn-primary");
-      connectBtn.classList.remove("btn-ghost");
-
-      clearModuleUI();
-    }
-
-    function clearModuleUI(){
-      [stampATag,stampBTag,stampCTag].forEach(el=>{
-        el.className="stamp-tag pending"; el.textContent="pending";
-      });
-      [stampAValue,stampBValue,stampCValue].forEach(el=>{el.textContent="pending";});
-      decisionDot.className="dot dot-pending";
-      decisionText.textContent="not computed";
-      tierDot.className="dot dot-pending";
-      tierText.textContent="0";
-      scoreHandleLabel.textContent="—";
-      privateScoreText.textContent="—";
-    }
-
-    /* ===== PUBLIC STAMPS (ONLY publicDecrypt, как в Platform) ===== */
-    function boolFromAny(val){
-      if(val === null || val === undefined) return null;
-      if(typeof val === "boolean") return val;
-      if(typeof val === "bigint") return val !== 0n;
-      if(typeof val === "number") return val !== 0;
-      if(typeof val === "string"){
-        const t = val.toLowerCase();
-        if(t==="true"||t==="1") return true;
-        if(t==="false"||t==="0") return false;
-        try{return BigInt(val)!==0n;}catch{return null;}
-      }
-      if(Array.isArray(val) && val.length) return boolFromAny(val[0]);
-      if(typeof val === "object"){
-        const vs = Object.values(val);
-        if(vs.length) return boolFromAny(vs[0]);
-      }
-      return null;
-    }
-
-    function pickFromDecryptOut(out, handle){
-      if(!out || !handle) return null;
-      const h = String(handle).toLowerCase();
-      const cv = out.clearValues || out.values || out;
-      if(cv && typeof cv === "object"){
-        const keys = Object.keys(cv);
-        const key  = keys.find(k=>k.toLowerCase()===h);
-        if(key) return cv[key];
-      }
-      if(typeof out.abiEncodedClearValues === "string"){
-        const hex = out.abiEncodedClearValues.replace(/^0x/,"");
-        if(hex.length>=64){
-          const word="0x"+hex.slice(0,64);
-          try{return BigInt(word);}catch{}
+    async function publicDecryptMany(relayer, items) {
+      const pairs = Array.isArray(items) ? items : [items];
+      const isObj = pairs.length && typeof pairs[0] === "object" && "handle" in pairs[0];
+      try {
+        appendLog("publicDecrypt pairs:", pairs);
+        const out = await relayer.publicDecrypt(pairs);
+        appendLog("publicDecrypt result (pairs):", out);
+        return { out, pairs };
+      } catch (e1) {
+        appendLog("publicDecrypt pairs failed, retry with handles:", e1?.message || e1);
+        try {
+          const handlesOnly = isObj ? pairs.map(p => p.handle) : pairs.map(String);
+          const out = await relayer.publicDecrypt(handlesOnly);
+          appendLog("publicDecrypt result (handles):", out);
+          return { out, pairs };
+        } catch (e2) {
+          appendLog("publicDecrypt failed:", e2?.message || e2);
+          throw e1 || e2;
         }
       }
-      return null;
     }
 
-    async function decodeStampsWithPublicDecrypt(handles){
-      const relayer = state.relayer;
-      if(!relayer) throw new Error("Relayer not ready");
-      const nonZero = handles.filter(h=>!isZeroHandle(h));
-      if(!nonZero.length) return [null,null,null];
-
-      const pairs = nonZero.map(h=>({ handle:String(h), contractAddress:CONTRACT_ADDRESS }));
-      const out = await relayer.publicDecrypt(pairs);
-
-      return handles.map(h=>{
-        if(isZeroHandle(h)) return null;
-        const v = pickFromDecryptOut(out,h);
-        return boolFromAny(v);
-      });
-    }
-
-    /* ===== PRIVATE SCORE (userDecrypt EIP712 — как в The Platform) ===== */
-    async function userDecryptScore(handle){
-      const relayer = state.relayer;
-      const sdk     = state.sdk;
-      const signer  = state.signer;
-      if(!relayer || !sdk || !signer) throw new Error("Relayer not ready");
-
-      if(isZeroHandle(handle)) throw new Error("No score handle");
-
-      const pair = { handle:String(handle), contractAddress:CONTRACT_ADDRESS };
-      const kp = await sdk.generateKeypair();
-      const startTs = Math.floor(Date.now()/1000).toString();
+    async function userDecryptMany(relayer, signer, pairs) {
+      const kp = await generateKeypair();
+      const startTs = Math.floor(Date.now() / 1000).toString();
       const daysValid = "7";
-      const eip = relayer.createEIP712(kp.publicKey,[CONTRACT_ADDRESS],startTs,daysValid);
+
+      const eip = relayer.createEIP712(kp.publicKey, [CONTRACT_ADDRESS], startTs, daysValid);
       const sig = await signer.signTypedData(
         eip.domain,
         { UserDecryptRequestVerification: eip.types.UserDecryptRequestVerification },
         eip.message
       );
-      const account = await signer.getAddress();
 
+      const userAddr = await signer.getAddress();
       const out = await relayer.userDecrypt(
-        [pair],
+        pairs,
         kp.privateKey,
         kp.publicKey,
-        sig.replace("0x",""),
+        sig.replace(/^0x/, ""),
         [CONTRACT_ADDRESS],
-        account,
+        userAddr,
         startTs,
         daysValid
       );
-
-      const key = Object.keys(out||{}).find(k=>k.toLowerCase()===String(handle).toLowerCase());
-      if(!key) throw new Error("Empty decrypt result");
-      const raw = out[key];
-
-      let bn;
-      if(typeof raw==="bigint") bn = raw;
-      else if(typeof raw==="number") bn = BigInt(raw);
-      else if(typeof raw==="string"){
-        bn = raw.startsWith("0x") ? BigInt(raw) : BigInt(raw);
-      }else{
-        bn = BigInt(String(raw));
-      }
-      return Number(bn);
+      appendLog("userDecrypt result:", out);
+      return { out, pairs };
     }
 
-    /* ===== MAIN REFRESH ===== */
-    async function refreshModule(){
-      try{
-        if(!state.contract || !state.signer || !state.relayer) return;
+    function updateDecryptTag() {
+      if (IS_HTTPS) {
+        decryptTagEl.textContent = "private decrypt: HTTPS ✓";
+        decryptTagEl.classList.remove("warn");
+        decryptTagEl.classList.add("ok");
+      } else {
+        decryptTagEl.textContent = "private decrypt: open via HTTPS for full support";
+        decryptTagEl.classList.remove("ok");
+        decryptTagEl.classList.add("warn");
+      }
+    }
 
-        const modId = Number(moduleIdInput.value || "0");
-        if(!Number.isInteger(modId) || modId < 1 || modId > 255){
-          throw new Error("Module ID must be 1..255");
+    function updateCertificateTag(isPublic) {
+      if (isPublic) {
+        certTagEl.textContent = "certificate: public (pass flag)";
+        certTagEl.classList.remove("err");
+        certTagEl.classList.add("ok");
+      } else {
+        certTagEl.textContent = "certificate: private";
+        certTagEl.classList.remove("ok");
+        certTagEl.classList.remove("err");
+      }
+    }
+
+    function updateModuleMetaTag(prereqId) {
+      const active = state.activeModuleId;
+      let meta = `module ID: ${active}`;
+      if (prereqId && prereqId !== 0n && prereqId !== 0) {
+        meta += ` • prerequisite: ${prereqId}`;
+      }
+      moduleMetaTagEl.textContent = meta;
+    }
+
+    function computeLocalStatuses() {
+      const done = state.passedModules;
+      const statuses = new Map(); // moduleId -> 'locked'|'ready'|'done'
+      COURSE_MODULES.forEach((m, idx) => {
+        if (done.has(m.id)) {
+          statuses.set(m.id, "done");
+        } else if (idx === 0) {
+          statuses.set(m.id, "ready");
+        } else {
+          const prevId = COURSE_MODULES[idx - 1].id;
+          statuses.set(m.id, done.has(prevId) ? "ready" : "locked");
+        }
+      });
+      return statuses;
+    }
+
+    function renderModuleSidebar() {
+      moduleListEl.innerHTML = "";
+      const statuses = computeLocalStatuses();
+
+      COURSE_MODULES.forEach((mod, idx) => {
+        const li = document.createElement("li");
+        li.className = "module-item";
+        if (mod.id === state.activeModuleId) li.classList.add("active");
+        li.dataset.moduleId = String(mod.id);
+
+        const idxEl = document.createElement("div");
+        idxEl.className = "module-index";
+        idxEl.textContent = String(idx + 1);
+
+        const body = document.createElement("div");
+        body.className = "module-body";
+
+        const nameEl = document.createElement("div");
+        nameEl.className = "module-name";
+        nameEl.textContent = mod.name;
+
+        const descEl = document.createElement("div");
+        descEl.className = "module-desc";
+        descEl.textContent = mod.desc;
+
+        const statusRow = document.createElement("div");
+        statusRow.className = "module-status";
+        const dot = document.createElement("span");
+        dot.className = "status-dot";
+        const st = statuses.get(mod.id) || "locked";
+        if (st === "ready") dot.classList.add("ready");
+        if (st === "locked") dot.classList.add("locked");
+        if (st === "done") dot.classList.add("done");
+        const label = document.createElement("span");
+        label.textContent =
+          st === "done" ? "Completed (locally)" :
+          st === "ready" ? "Ready to attempt" :
+          "Locked until previous module passes";
+
+        statusRow.appendChild(dot);
+        statusRow.appendChild(label);
+
+        body.appendChild(nameEl);
+        body.appendChild(descEl);
+        body.appendChild(statusRow);
+
+        li.appendChild(idxEl);
+        li.appendChild(body);
+
+        li.addEventListener("click", () => setActiveModule(mod.id));
+
+        moduleListEl.appendChild(li);
+      });
+    }
+
+    function renderModuleSelect() {
+      moduleSelectEl.innerHTML = "";
+      COURSE_MODULES.forEach(mod => {
+        const opt = document.createElement("option");
+        opt.value = String(mod.id);
+        opt.textContent = `${mod.id} · ${mod.name}`;
+        if (mod.id === state.activeModuleId) opt.selected = true;
+        moduleSelectEl.appendChild(opt);
+      });
+    }
+
+    function setActiveModule(moduleId) {
+      state.activeModuleId = Number(moduleId);
+      renderModuleSidebar();
+      renderModuleSelect();
+      checkModuleMeta();
+      clearResultDisplay(false);
+      localUnlockNoteEl.textContent = "";
+    }
+
+    function clearResultDisplay(clearHandles = true) {
+      resultScoreEl.textContent = "—";
+      resultScoreEl.classList.remove("positive", "negative");
+      resultPassEl.textContent = "—";
+      resultPassEl.classList.remove("positive", "negative");
+      if (clearHandles) {
+        resultScoreHandleEl.textContent = "Handle: —";
+        resultPassHandleEl.textContent = "Handle: —";
+      }
+    }
+
+    /* ---------- CONNECTION ---------- */
+    connectBtn.addEventListener("click", async () => {
+      if (state.signer) {
+        await disconnectWallet();
+      } else {
+        await connectWallet();
+      }
+    });
+
+    async function connectWallet() {
+      try {
+        if (!window.ethereum?.request) {
+          alert("Please install MetaMask or another EIP-1193 wallet.");
+          return;
+        }
+        await ensureSepolia();
+
+        const provider = new BrowserProvider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+        const signer = await provider.getSigner();
+        const userAddress = await signer.getAddress();
+
+        const contract = new Contract(CONTRACT_ADDRESS, ABI, signer);
+
+        appendLog("Creating Relayer instance…");
+        const relayer = await createInstance({
+          ...SepoliaConfig,
+          relayerUrl: RELAYER_URL,
+          gatewayUrl: GATEWAY_URL,
+          network: window.ethereum,
+          debug: true
+        });
+
+        state.provider = provider;
+        state.signer = signer;
+        state.contract = contract;
+        state.relayer = relayer;
+        state.userAddress = userAddress;
+
+        connectBtn.textContent = "Disconnect";
+        connectBtn.classList.remove("btn-primary");
+        accountLabelEl.textContent = shortAddress(userAddress);
+
+        try {
+          state.owner = await contract.owner();
+          appendLog("Owner:", state.owner);
+
+          const meLower = userAddress.toLowerCase();
+          const ownerLower = state.owner.toLowerCase();
+          if (adminOwnerTagEl) {
+            if (meLower === ownerLower) {
+              adminOwnerTagEl.textContent = "role: owner";
+              adminOwnerTagEl.classList.add("ok");
+            } else {
+              adminOwnerTagEl.textContent = "role: viewer";
+            }
+          }
+        } catch {
+          appendLog("Failed to read owner()");
+          if (adminOwnerTagEl) adminOwnerTagEl.textContent = "role: unknown";
         }
 
-        const [scoreH, p1, p2, p3, decided] = await state.contract.getMyModuleHandles(modId);
-        state.lastScoreHandle = scoreH;
-        state.lastStampHandles = [p1,p2,p3];
+        appendLog("Relayer ready:", RELAYER_URL, GATEWAY_URL);
+        updateDecryptTag();
 
-        scoreHandleLabel.textContent = isZeroHandle(scoreH) ? "—" : shortHex(scoreH);
+        await reloadState();
+      } catch (e) {
+        const msg = e?.reason || e?.shortMessage || e?.message || String(e);
+        appendLog("Connect failed:", msg);
+        alert(msg);
+      }
+    }
 
-        if(!decided){
-          clearModuleUI();
+    async function disconnectWallet() {
+      state.provider = null;
+      state.signer = null;
+      state.contract = null;
+      state.relayer = null;
+      state.userAddress = null;
+      state.owner = null;
+
+      connectBtn.textContent = "Connect wallet";
+      connectBtn.classList.add("btn-primary");
+      accountLabelEl.textContent = "not connected";
+      clearResultDisplay(true);
+      makePublicStatusEl.textContent = "";
+      certResultEl.textContent = "—";
+      certHandleEl.textContent = "—";
+      updateCertificateTag(false);
+      if (adminOwnerTagEl) adminOwnerTagEl.textContent = "role: unknown";
+      appendLog("Disconnected");
+    }
+
+    /* ---------- SUBMIT ATTEMPT ---------- */
+    submitAttemptBtn.addEventListener("click", async () => {
+      try {
+        if (!state.contract || !state.relayer || !state.signer) {
+          throw new Error("Connect wallet first");
+        }
+        submitStatusEl.textContent = "";
+
+        const moduleId = state.activeModuleId;
+        const rawScore = scoreInputEl.value.trim();
+        const score = Number(rawScore);
+        if (!Number.isInteger(score) || score < 0 || score > 65535) {
+          throw new Error("Score must be an integer between 0 and 65535");
+        }
+
+        appendLog("Encrypting score for module", moduleId, ":", score);
+        const buf = state.relayer.createEncryptedInput(CONTRACT_ADDRESS, state.userAddress);
+        buf.add16(score);
+        const { handles, inputProof } = await buf.encrypt();
+        appendLog("Encrypted handle:", handles[0]);
+
+        const tx = await state.contract.submitModuleAttempt(
+          BigInt(moduleId),
+          handles[0],
+          inputProof
+        );
+        submitStatusEl.textContent = "Transaction sent: " + tx.hash.slice(0, 10) + "…";
+        appendLog("submitModuleAttempt tx:", tx.hash);
+
+        await tx.wait();
+        submitStatusEl.textContent = "Attempt submitted ✓";
+        appendLog("submitModuleAttempt confirmed");
+
+        await reloadState();
+      } catch (e) {
+        const msg = e?.reason || e?.shortMessage || e?.message || String(e);
+        submitStatusEl.textContent = msg;
+        appendLog("submitModuleAttempt error:", msg);
+        alert(msg);
+      }
+    });
+
+    /* ---------- PRIVATE DECRYPT ---------- */
+    decryptPrivateBtn.addEventListener("click", async () => {
+      try {
+        if (!state.contract || !state.relayer || !state.signer) {
+          throw new Error("Connect wallet first");
+        }
+        if (!IS_HTTPS) {
+          appendLog("userDecrypt requested on non-HTTPS origin.");
+        }
+
+        const moduleId = state.activeModuleId;
+        appendLog("Fetching my handles for module", moduleId);
+        const r = await state.contract.getMyModuleHandles(BigInt(moduleId));
+        const scoreH = r?.[0];
+        const passH = r?.[1];
+        const decided = !!r?.[2];
+
+        if (!decided || !scoreH || !passH) {
+          clearResultDisplay(true);
+          localUnlockNoteEl.textContent = "No attempt recorded on-chain for this module yet.";
           return;
         }
 
-        let [b1,b2,b3] = [null,null,null];
-        try{
-          [b1,b2,b3] = await decodeStampsWithPublicDecrypt([p1,p2,p3]);
-        }catch(e){
-          console.warn("publicDecrypt failed (CORS?)", e?.message||e);
-          sdkHint.textContent = "publicDecrypt failed (likely CORS / gateway). Stamps may stay as 'pending'.";
+        const pairs = [
+          { handle: scoreH, contractAddress: CONTRACT_ADDRESS },
+          { handle: passH, contractAddress: CONTRACT_ADDRESS }
+        ];
+
+        const { out, pairs: used } = await userDecryptMany(state.relayer, state.signer, pairs);
+        const pick = buildValuePicker(out, used);
+
+        const scoreVal = pick(scoreH);
+        const passVal = pick(passH);
+        const passed = (passVal ?? 0n) !== 0n;
+
+        resultScoreEl.textContent = scoreVal != null ? scoreVal.toString() : "n/a";
+        resultScoreEl.classList.remove("positive", "negative");
+        resultScoreEl.classList.add("positive");
+
+        resultPassEl.textContent = passed ? "passed (true)" : "not passed (false)";
+        resultPassEl.classList.remove("positive", "negative");
+        resultPassEl.classList.add(passed ? "positive" : "negative");
+
+        resultScoreHandleEl.textContent = "Handle: " + String(scoreH);
+        resultPassHandleEl.textContent = "Handle: " + String(passH);
+
+        if (passed) {
+          state.passedModules.add(moduleId);
+          localUnlockNoteEl.textContent =
+            "This module is locally marked as completed. The next step in the path is now marked as ready.";
+        } else {
+          localUnlockNoteEl.textContent =
+            "You can resubmit a higher score for this module at any time.";
         }
 
-        function setStamp(tagEl, textEl, b){
-          if(b === true){
-            tagEl.className="stamp-tag ok"; tagEl.textContent="pass";
-            textEl.textContent="pass";
-          }else if(b === false){
-            tagEl.className="stamp-tag fail"; tagEl.textContent="fail";
-            textEl.textContent="fail";
-          }else{
-            tagEl.className="stamp-tag pending"; tagEl.textContent="pending";
-            textEl.textContent="pending";
-          }
-        }
-        setStamp(stampATag, stampAValue, b1);
-        setStamp(stampBTag, stampBValue, b2);
-        setStamp(stampCTag, stampCValue, b3);
-
-        const tier = [b1,b2,b3].filter(v=>v===true).length;
-        tierText.textContent = String(tier);
-        tierDot.className = tier>0 ? "dot dot-ok" : "dot dot-pending";
-        decisionDot.className = "dot dot-ok";
-        decisionText.textContent = "computed";
-      }catch(e){
-        console.error(e);
-        alert(e?.message || "Failed to refresh module state");
+        renderModuleSidebar();
+      } catch (e) {
+        const msg = e?.reason || e?.shortMessage || e?.message || String(e);
+        appendLog("decryptPrivate error:", msg);
+        alert(msg);
       }
-    }
+    });
 
-    /* ===== ACTIONS ===== */
-    async function submitScore(){
-      try{
-        if(!state.contract || !state.relayer || !state.signer){
+    /* ---------- PUBLIC CERTIFICATE (enable) ---------- */
+    makePublicBtn.addEventListener("click", async () => {
+      try {
+        if (!state.contract || !state.relayer || !state.signer) {
           throw new Error("Connect wallet first");
         }
-        submitStatus.textContent = "";
+        makePublicStatusEl.textContent = "";
+        const moduleId = state.activeModuleId;
 
-        const modId = Number(moduleIdInput.value || "0");
-        const raw = scoreInput.value.trim();
-        const score = Number(raw);
-        if(!Number.isInteger(score) || score < 0 || score > 65535){
-          throw new Error("Score must be integer 0..65535");
-        }
-        if(!Number.isInteger(modId) || modId<1 || modId>255){
-          throw new Error("Module ID must be 1..255");
-        }
+        appendLog("Calling enablePublicCertificate for module", moduleId);
+        const tx = await state.contract.enablePublicCertificate(BigInt(moduleId));
+        makePublicStatusEl.textContent = "Transaction sent: " + tx.hash.slice(0, 10) + "…";
+        appendLog("enablePublicCertificate tx:", tx.hash);
 
-        const sender = await state.signer.getAddress();
-        const enc = state.relayer.createEncryptedInput(CONTRACT_ADDRESS, sender);
-        enc.add16(score);
-        const { handles, inputProof } = await enc.encrypt();
-
-        const tx = await state.contract.submitModuleScore(modId, handles[0], inputProof);
-        submitStatus.textContent = "Tx: " + tx.hash.slice(0,10) + "…";
         await tx.wait();
-        submitStatus.textContent = "Submitted ✓";
-        await refreshModule();
-      }catch(e){
-        console.error(e);
-        submitStatus.textContent = e?.reason || e?.shortMessage || e?.message || String(e);
-        alert(submitStatus.textContent);
+        makePublicStatusEl.textContent = "Certificate flag set ✓";
+        updateCertificateTag(true);
+      } catch (e) {
+        const msg = e?.reason || e?.shortMessage || e?.message || String(e);
+        makePublicStatusEl.textContent = msg;
+        appendLog("enablePublicCertificate error:", msg);
+        alert(msg);
       }
-    }
+    });
 
-    async function setThresholds(){
-      try{
-        if(!state.contract || !state.relayer || !state.signer){
-          throw new Error("Connect wallet first");
+    /* ---------- PUBLIC CERTIFICATE (check) ---------- */
+    checkCertBtn.addEventListener("click", async () => {
+      try {
+        if (!state.contract || !state.relayer) {
+          throw new Error("Connect wallet first (Relayer needed for public decrypt)");
         }
-        thrStatus.textContent = "";
+        const learner = checkAddressInputEl.value.trim();
+        const moduleId = Number(checkModuleInputEl.value || "0");
+        if (!/^0x[a-fA-F0-9]{40}$/.test(learner)) {
+          throw new Error("Invalid learner address");
+        }
+        if (!Number.isInteger(moduleId) || moduleId <= 0) {
+          throw new Error("Module ID must be a positive integer");
+        }
 
-        const modId = Number(moduleIdInput.value || "0");
-        const t1 = Number(t1Input.value || "0");
-        const t2 = Number(t2Input.value || "0");
-        const t3 = Number(t3Input.value || "0");
+        certResultEl.textContent = "Checking…";
+        certHandleEl.textContent = "—";
 
-        for(const [name,val] of [["T1",t1],["T2",t2],["T3",t3]]){
-          if(!Number.isInteger(val) || val<0 || val>65535){
-            throw new Error(name+" must be integer 0..65535");
+        const r = await state.contract.getModulePassHandlePublic(learner, BigInt(moduleId));
+        const passH = r?.[0];
+        const decided = !!r?.[1];
+
+        if (!decided || !passH || /^0x0{64}$/i.test(String(passH))) {
+          certResultEl.textContent = "No attempt recorded or not yet decided.";
+          certHandleEl.textContent = String(passH || "—");
+          updateCertificateTag(false);
+          return;
+        }
+
+        certHandleEl.textContent = String(passH);
+
+        const { out, pairs: used } = await publicDecryptMany(state.relayer, [
+          { handle: passH, contractAddress: CONTRACT_ADDRESS }
+        ]);
+        const pick = buildValuePicker(out, used);
+        const v = pick(passH);
+        const passed = (v ?? 0n) !== 0n;
+
+        certResultEl.textContent = passed
+          ? "Certificate: module passed (true)"
+          : "Certificate: module not passed (false)";
+        updateCertificateTag(true);
+      } catch (e) {
+        const msg = e?.reason || e?.shortMessage || e?.message || String(e);
+        certResultEl.textContent = msg;
+        appendLog("checkCert error:", msg);
+        alert(msg);
+      }
+    });
+
+    /* ---------- ADMIN: CREATE / UPDATE MODULE ---------- */
+    if (adminSetModuleBtn) {
+      adminSetModuleBtn.addEventListener("click", async () => {
+        try {
+          if (!state.contract || !state.relayer || !state.signer) {
+            throw new Error("Connect wallet first");
           }
-        }
+          adminStatusEl.textContent = "";
 
-        const sender = await state.signer.getAddress();
-        const enc = state.relayer.createEncryptedInput(CONTRACT_ADDRESS, sender);
-        enc.add16(t1); enc.add16(t2); enc.add16(t3);
-        const { handles, inputProof } = await enc.encrypt();
-
-        const tx = await state.contract.setModuleThresholds(modId, handles[0], handles[1], handles[2], inputProof);
-        thrStatus.textContent = "Tx: " + tx.hash.slice(0,10) + "…";
-        await tx.wait();
-        thrStatus.textContent = "Thresholds updated ✓";
-        await refreshModule();
-      }catch(e){
-        console.error(e);
-        thrStatus.textContent = e?.reason || e?.shortMessage || e?.message || String(e);
-        alert(thrStatus.textContent);
-      }
-    }
-
-    async function revealScoreSigned(){
-      try{
-        if(!state.contract || !state.relayer || !state.signer || !state.sdk){
-          throw new Error("Connect wallet first");
-        }
-        const modId = Number(moduleIdInput.value || "0");
-        if(!Number.isInteger(modId) || modId < 1 || modId > 255){
-          throw new Error("Module ID must be 1..255");
-        }
-
-        // всегда берём свежий handle, как в The Platform
-        const [scoreH] = await state.contract.getMyModuleHandles(modId);
-        state.lastScoreHandle = scoreH;
-        scoreHandleLabel.textContent = isZeroHandle(scoreH) ? "—" : shortHex(scoreH);
-
-        const val = await userDecryptScore(scoreH);
-        privateScoreText.textContent = String(val);
-      }catch(e){
-        console.error(e);
-        alert(e?.reason || e?.shortMessage || e?.message || String(e));
-      }
-    }
-
-    /* ===== EVENTS ===== */
-    connectBtn.addEventListener("click", connect);
-    resetBtn.addEventListener("click", ()=>{ window.location.reload(); });
-    reloadBtn.addEventListener("click", ()=>{ refreshModule(); });
-    submitScoreBtn.addEventListener("click", submitScore);
-    setThrBtn.addEventListener("click", setThresholds);
-    revealScoreBtn.addEventListener("click", revealScoreSigned);
-
-    // авто-коннект, если уже авторизован
-    if(window.ethereum){
-      window.ethereum.on?.("accountsChanged", ()=>window.location.reload());
-      window.ethereum.on?.("chainChanged", ()=>window.location.reload());
-      (async()=>{
-        try{
-          const accs = await window.ethereum.request({ method:"eth_accounts" });
-          if(Array.isArray(accs) && accs.length){
-            await connect();
+          const me = state.userAddress || await state.signer.getAddress();
+          if (!state.owner || state.owner.toLowerCase() !== me.toLowerCase()) {
+            throw new Error("Only contract owner can configure modules");
           }
-        }catch{}
-      })();
+
+          const moduleId = Number(adminModuleIdEl.value || "0");
+          const prereqId = Number(adminPrereqIdEl.value || "0");
+          const passingScore = Number(adminPassingScoreEl.value || "0");
+
+          if (!Number.isInteger(moduleId) || moduleId <= 0) {
+            throw new Error("Module ID must be a positive integer");
+          }
+          if (!Number.isInteger(prereqId) || prereqId < 0) {
+            throw new Error("Prerequisite ID must be >= 0");
+          }
+          if (!Number.isInteger(passingScore) || passingScore < 0 || passingScore > 65535) {
+            throw new Error("Passing score must be between 0 and 65535");
+          }
+
+          appendLog("Admin: encrypt passing score for module", moduleId, ":", passingScore);
+          adminStatusEl.textContent = "Encrypting…";
+
+          const buf = state.relayer.createEncryptedInput(CONTRACT_ADDRESS, me);
+          buf.add16(passingScore); // euint16 passing score
+          const { handles, inputProof } = await buf.encrypt();
+          appendLog("Admin: encrypted handle:", handles[0]);
+
+          // Check if module exists
+          let exists = false;
+          try {
+            const meta = await state.contract.getModuleMeta(BigInt(moduleId));
+            exists = !!meta?.[0];
+          } catch (e) {
+            appendLog("getModuleMeta failed (assuming new module):", e?.message || e);
+          }
+
+          let tx;
+          if (!exists) {
+            appendLog("Calling createModule…");
+            tx = await state.contract.createModule(
+              BigInt(moduleId),
+              BigInt(prereqId),
+              handles[0],
+              inputProof
+            );
+          } else {
+            appendLog("Calling updateModule…");
+            tx = await state.contract.updateModule(
+              BigInt(moduleId),
+              BigInt(prereqId),
+              handles[0],
+              inputProof
+            );
+          }
+
+          adminStatusEl.textContent = "Tx sent: " + tx.hash.slice(0, 10) + "…";
+          appendLog("Admin module tx:", tx.hash);
+          await tx.wait();
+
+          adminStatusEl.textContent = exists
+            ? "Module updated ✓"
+            : "Module created ✓";
+
+          await reloadState();
+          renderModuleSidebar();
+          renderModuleSelect();
+        } catch (e) {
+          const msg = e?.reason || e?.shortMessage || e?.message || String(e);
+          adminStatusEl.textContent = msg;
+          appendLog("Admin set module error:", msg);
+          alert(msg);
+        }
+      });
+    }
+
+    /* ---------- RELOAD STATE ---------- */
+    reloadBtn.addEventListener("click", () => {
+      reloadState().catch(e => {
+        const msg = e?.message || String(e);
+        appendLog("reloadState error:", msg);
+      });
+    });
+
+    async function reloadState() {
+      if (!state.contract || !state.signer) return;
+      await checkModuleMeta();
+    }
+
+    async function checkModuleMeta() {
+      try {
+        if (!state.contract) return;
+        const moduleId = state.activeModuleId;
+        try {
+          const [exists, prereq] = await state.contract.getModuleMeta(BigInt(moduleId));
+          if (!exists) {
+            moduleMetaTagEl.textContent = `module ID: ${moduleId} • not configured on-chain`;
+          } else {
+            updateModuleMetaTag(prereq);
+          }
+        } catch {
+          moduleMetaTagEl.textContent = `module ID: ${moduleId}`;
+        }
+      } catch (e) {
+        appendLog("getModuleMeta error:", e?.message || e);
+      }
+    }
+
+    /* ---------- INIT UI ---------- */
+    renderModuleSidebar();
+    renderModuleSelect();
+    updateDecryptTag();
+    updateCertificateTag(false);
+    localUnlockNoteEl.textContent = "";
+
+    moduleSelectEl.addEventListener("change", () => {
+      setActiveModule(Number(moduleSelectEl.value));
+    });
+
+    // auto-connect if already authorized
+    if (window.ethereum) {
+      try {
+        const accounts = await window.ethereum.request({ method: "eth_accounts" });
+        if (accounts && accounts.length) {
+          appendLog("Wallet already authorized, auto-connecting…");
+          await connectWallet();
+        }
+      } catch (e) {
+        appendLog("Auto-connect failed:", e?.message || e);
+      }
+
+      window.ethereum.on?.("accountsChanged", () => {
+        location.reload();
+      });
+      window.ethereum.on?.("chainChanged", () => {
+        location.reload();
+      });
     }
   </script>
 </body>

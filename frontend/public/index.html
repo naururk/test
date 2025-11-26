@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Encrypted Learning Path • Zama FHEVM</title>
+  <title>Secret Darts • Zama FHEVM</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <!-- Required for Relayer SDK (WASM/Workers) -->
@@ -11,26 +11,35 @@
 
   <style>
     :root {
-      --bg-page: #fdfaf3;
-      --ink: #1f2933;
+      --bg-page: #f3f4f8;
+      --bg-grid: radial-gradient(circle at 0 0, rgba(148, 163, 184, 0.18), transparent 55%),
+                 radial-gradient(circle at 100% 100%, rgba(191, 219, 254, 0.45), transparent 55%);
+      --bg-card: #ffffff;
+      --bg-card-soft: #f9fafb;
+      --ink: #111827;
       --muted: #6b7280;
-      --panel: #ffffff;
       --border: #e5e7eb;
-      --border-strong: #d1d5db;
-      --accent: #0f766e;
-      --accent-soft: #ecfdf5;
-      --accent-alt: #f97316;
-      --accent-alt-soft: #fff7ed;
-      --danger: #b91c1c;
-      --danger-soft: #fee2e2;
-      --radius-lg: 10px;
-      --radius-md: 7px;
-      --shadow-soft: 0 10px 30px rgba(15,23,42,0.08);
+      --border-strong: #cbd5f5;
+      --accent: #2563eb;
+      --accent-soft: #dbeafe;
+      --accent-strong: #1d4ed8;
+      --success: #16a34a;
+      --danger: #dc2626;
+      --ring-bull: #eab308;
+      --ring-inner: #22c55e;
+      --ring-outer: #3b82f6;
+      --ring-miss: #9ca3af;
+      --radius-lg: 18px;
+      --radius-md: 12px;
+      --shadow-soft: 0 18px 50px rgba(15, 23, 42, 0.14);
+      --shadow-light: 0 10px 22px rgba(15, 23, 42, 0.08);
+      --sans: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
       --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      --sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
     }
 
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
     html, body {
       margin: 0;
@@ -39,31 +48,41 @@
     }
 
     body {
-      background: var(--bg-page);
-      color: var(--ink);
       font-family: var(--sans);
       font-size: 14px;
       line-height: 1.5;
+      color: var(--ink);
+      background:
+        var(--bg-grid),
+        linear-gradient(to bottom, #f1f5f9, #e5e7eb);
+      -webkit-font-smoothing: antialiased;
     }
 
     .app {
       max-width: 1120px;
-      margin: 20px auto 32px;
-      padding: 0 16px;
+      margin: 0 auto;
+      padding: 18px 16px 32px;
       display: flex;
       flex-direction: column;
       gap: 16px;
     }
 
     /* HEADER */
+
     .topbar {
+      background: rgba(255, 255, 255, 0.92);
+      border-radius: 16px;
+      padding: 10px 14px;
+      border: 1px solid rgba(209, 213, 219, 0.9);
+      box-shadow: var(--shadow-light);
       display: flex;
-      align-items: flex-end;
+      align-items: center;
       justify-content: space-between;
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 8px;
-      gap: 12px;
-      flex-wrap: wrap;
+      gap: 10px;
+      position: sticky;
+      top: 10px;
+      backdrop-filter: blur(10px);
+      z-index: 10;
     }
 
     .brand {
@@ -72,329 +91,534 @@
       gap: 2px;
     }
 
-    .brand-line1 {
+    .brand-title {
       font-size: 18px;
       font-weight: 700;
-      letter-spacing: 0.02em;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #111827;
     }
 
-    .brand-line2 {
-      font-size: 12px;
+    .brand-sub {
+      font-size: 11px;
       color: var(--muted);
     }
 
-    .status-row {
+    .topbar-right {
       display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
       align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
       justify-content: flex-end;
     }
 
-    .field-chip {
-      background: var(--panel);
-      border-radius: 999px;
-      border: 1px solid var(--border);
-      padding: 4px 10px;
-      font-size: 12px;
-      display: inline-flex;
+    .chip-row {
+      display: flex;
       align-items: center;
       gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .chip {
+      border-radius: 999px;
+      border: 1px solid rgba(209, 213, 219, 0.9);
+      background: #f9fafb;
+      padding: 4px 10px;
+      font-size: 11px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
       white-space: nowrap;
     }
 
-    .field-chip span.mono {
+    .chip-label {
+      color: var(--muted);
+    }
+
+    .chip-value {
       font-family: var(--mono);
-      font-size: 12px;
+      color: #111827;
     }
 
-    /* BUTTONS */
-    button {
-      font-family: inherit;
-      cursor: pointer;
+    .chip-value.muted {
+      color: #9ca3af;
     }
 
-    .btn {
-      border-radius: 6px;
-      border: 1px solid var(--border-strong);
-      padding: 7px 12px;
-      font-size: 13px;
-      font-weight: 600;
-      background: var(--panel);
-      color: var(--ink);
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 5px;
-      transition: background 0.1s ease, transform 0.1s ease, box-shadow 0.1s ease;
-    }
-
-    .btn:hover:not([disabled]) {
-      background: #f9fafb;
-      transform: translateY(-1px);
-      box-shadow: 0 3px 8px rgba(15,23,42,0.08);
-    }
-
-    .btn-primary {
-      border-color: var(--accent);
-      background: var(--accent);
-      color: white;
-    }
-
-    .btn-primary:hover:not([disabled]) {
-      background: #115e59;
-      box-shadow: 0 4px 10px rgba(15,118,110,0.35);
-    }
-
-    .btn-ghost {
-      border-style: dashed;
-      border-color: var(--border-strong);
-      background: transparent;
-    }
-
-    .btn-small {
-      padding: 5px 9px;
-      font-size: 12px;
-    }
-
-    .btn[disabled] {
-      opacity: .6;
-      cursor: not-allowed;
-      transform: none;
-      box-shadow: none;
-    }
-
-    .mono { font-family: var(--mono); }
-
-    /* MAIN LAYOUT */
-    .layout {
-      display: grid;
-      grid-template-columns: 260px minmax(0, 1fr);
-      gap: 18px;
-      align-items: flex-start;
-    }
-
-    @media (max-width: 880px) {
-      .layout {
-        grid-template-columns: minmax(0,1fr);
-      }
-    }
-
-    /* SIDEBAR: module path */
-    .sidebar {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 12px 12px 10px;
-      box-shadow: var(--shadow-soft);
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      min-height: 220px;
-    }
-
-    .sidebar-title {
-      font-size: 13px;
-      font-weight: 600;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--muted);
-    }
-
-    .module-list {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .module-item {
-      display: grid;
-      grid-template-columns: 26px minmax(0, 1fr);
-      gap: 8px;
-      align-items: flex-start;
-      padding: 6px 6px;
-      border-radius: var(--radius-md);
-      cursor: pointer;
-      border: 1px solid transparent;
-    }
-
-    .module-item:hover {
-      background: #f9fafb;
-      border-color: var(--border);
-    }
-
-    .module-item.active {
-      border-color: var(--accent);
-      background: var(--accent-soft);
-    }
-
-    .module-index {
-      width: 20px;
-      height: 20px;
+    .btn-main {
       border-radius: 999px;
-      border: 1px solid var(--border-strong);
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      border: 1px solid var(--accent);
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color: #f9fafb;
+      padding: 7px 14px;
       font-size: 11px;
       font-weight: 600;
-      background: #f9fafb;
-    }
-
-    .module-item.active .module-index {
-      border-color: var(--accent);
-      background: var(--panel);
-      color: var(--accent);
-    }
-
-    .module-body {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .module-name {
-      font-size: 13px;
-      font-weight: 600;
-    }
-
-    .module-desc {
-      font-size: 12px;
-      color: var(--muted);
-    }
-
-    .module-status {
-      margin-top: 3px;
-      font-size: 11px;
-      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
       display: inline-flex;
       align-items: center;
-      gap: 5px;
+      justify-content: center;
+      gap: 7px;
+      cursor: pointer;
+      box-shadow: 0 10px 26px rgba(37, 99, 235, 0.35);
+      transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
     }
 
-    .status-dot {
+    .btn-main span.dot {
       width: 7px;
       height: 7px;
       border-radius: 999px;
-      background: #cbd5f5;
-    }
-    .status-dot.ready { background: #10b981; }
-    .status-dot.locked { background: #9ca3af; }
-    .status-dot.done { background: #0ea5e9; }
-
-    .sidebar-note {
-      font-size: 11px;
-      color: var(--muted);
-      border-top: 1px solid var(--border);
-      padding-top: 6px;
+      background: #bbf7d0;
+      box-shadow: 0 0 0 4px rgba(74, 222, 128, 0.45);
     }
 
-    /* MAIN PANELS */
-    .main {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
+    .btn-main:hover:not([disabled]) {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 32px rgba(37, 99, 235, 0.45);
+      filter: brightness(1.03);
     }
 
-    .block {
-      background: var(--panel);
+    .btn-main[disabled] {
+      opacity: 0.65;
+      cursor: not-allowed;
+      box-shadow: none;
+      filter: grayscale(0.15);
+    }
+
+    @media (max-width: 880px) {
+      .topbar {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .topbar-right {
+        justify-content: flex-start;
+      }
+    }
+
+    /* LAYOUT */
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.1fr);
+      gap: 16px;
+      margin-top: 8px;
+      align-items: flex-start;
+    }
+
+    @media (max-width: 960px) {
+      .layout {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    /* Cards */
+
+    .card {
+      background: var(--bg-card);
       border-radius: var(--radius-lg);
       border: 1px solid var(--border);
       box-shadow: var(--shadow-soft);
-      padding: 12px 14px;
+      padding: 14px 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 0 0, rgba(191, 219, 254, 0.35), transparent 55%),
+        radial-gradient(circle at 100% 100%, rgba(219, 234, 254, 0.5), transparent 60%);
+      opacity: 0.45;
+      pointer-events: none;
+    }
+
+    .card-inner {
+      position: relative;
+      z-index: 1;
       display: flex;
       flex-direction: column;
       gap: 10px;
     }
 
-    .block-header {
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: flex-start;
+    }
+
+    .card-title {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #111827;
+    }
+
+    .card-sub {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .pill {
+      border-radius: 999px;
+      border: 1px solid var(--border-strong);
+      background: var(--bg-card-soft);
+      padding: 3px 8px;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .pill.good {
+      border-color: rgba(22, 163, 74, 0.7);
+      color: #166534;
+      background: #dcfce7;
+    }
+
+    .pill.warn {
+      border-color: rgba(234, 179, 8, 0.8);
+      color: #854d0e;
+      background: #fef9c3;
+    }
+
+    .pill.bad {
+      border-color: rgba(220, 38, 38, 0.8);
+      color: #991b1b;
+      background: #fee2e2;
+    }
+
+    .section-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+    }
+
+    /* Board column (RIGHT) */
+
+    .board-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .dart-board-container {
       display: flex;
       align-items: center;
+      justify-content: center;
+    }
+
+    .dart-board {
+      position: relative;
+      width: min(320px, 68vw);
+      aspect-ratio: 1 / 1;
+      border-radius: 999px;
+      background:
+        radial-gradient(circle at 50% 50%, #f9fafb 0, #e5e7eb 45%, #d1d5db 63%, #9ca3af 100%);
+      border: 1px solid rgba(156, 163, 175, 0.9);
+      box-shadow:
+        0 18px 30px rgba(15, 23, 42, 0.18),
+        0 0 0 1px rgba(148, 163, 184, 0.7);
+      cursor: crosshair;
+      overflow: hidden;
+    }
+
+    .dart-ring {
+      position: absolute;
+      inset: 18%;
+      border-radius: 999px;
+      border: 2px solid rgba(129, 140, 248, 0.6);
+    }
+
+    .dart-ring.inner {
+      inset: 34%;
+      border-color: rgba(34, 197, 94, 0.8);
+    }
+
+    .dart-ring.bull {
+      inset: 48%;
+      border-color: rgba(234, 179, 8, 0.9);
+      background: radial-gradient(circle, #facc15 0, #fde047 40%, transparent 70%);
+    }
+
+    .dart-axis {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 100%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(148, 163, 184, 0.7), transparent);
+      transform-origin: center;
+      pointer-events: none;
+    }
+
+    .dart-axis.y {
+      transform: translate(-50%, -50%) rotate(90deg);
+    }
+
+    .dart-axis.x {
+      transform: translate(-50%, -50%);
+    }
+
+    .dart-click-marker {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      border: 2px solid #22c55e;
+      background: rgba(15, 23, 42, 0.95);
+      box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.35);
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.12s ease;
+    }
+
+    .dart-click-marker.visible {
+      opacity: 1;
+    }
+
+    .board-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .coords-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      border-radius: 999px;
+      border: 1px solid var(--border-strong);
+      background: var(--bg-card-soft);
+      padding: 2px 7px;
+      font-size: 11px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .badge-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--ring-miss);
+    }
+
+    .badge-dot.outer {
+      background: var(--ring-outer);
+    }
+
+    .badge-dot.inner {
+      background: var(--ring-inner);
+    }
+
+    .badge-dot.bull {
+      background: var(--ring-bull);
+    }
+
+    .badge-dot.miss {
+      background: var(--ring-miss);
+    }
+
+    /* Buttons + status */
+
+    .btn {
+      border-radius: 999px;
+      border: 1px solid var(--border-strong);
+      background: var(--bg-card-soft);
+      color: var(--ink);
+      font-size: 11px;
+      padding: 6px 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: background 0.1s ease, transform 0.1s ease, box-shadow 0.1s ease, border-color 0.1s ease;
+    }
+
+    .btn:hover:not([disabled]) {
+      background: #e5edff;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(148, 163, 184, 0.7);
+      border-color: var(--accent-soft);
+    }
+
+    .btn[disabled] {
+      opacity: 0.6;
+      cursor: not-allowed;
+      box-shadow: none;
+      transform: none;
+    }
+
+    .btn-accent {
+      background: linear-gradient(135deg, #3b82f6, #22c55e);
+      border-color: rgba(59, 130, 246, 0.9);
+      color: #eff6ff;
+      font-weight: 600;
+    }
+
+    .btn-accent:hover:not([disabled]) {
+      filter: brightness(1.05);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      border-style: dashed;
+      border-color: var(--border-strong);
+    }
+
+    .btn-sm {
+      padding: 5px 10px;
+      font-size: 10px;
+    }
+
+    .status-line {
+      font-size: 11px;
+      color: var(--muted);
+      display: flex;
       justify-content: space-between;
       gap: 8px;
       flex-wrap: wrap;
     }
 
-    .block-title {
-      font-size: 15px;
-      font-weight: 600;
+    .status-line strong {
+      color: var(--ink);
     }
 
-    .block-sub {
-      font-size: 12px;
-      color: var(--muted);
-    }
+    /* Result cards */
 
-    .block-tag {
-      font-size: 11px;
-      padding: 3px 7px;
-      border-radius: 999px;
-      border: 1px solid var(--border);
-      background: #f9fafb;
-      color: var(--muted);
-    }
-
-    .block-tag.ok {
-      border-color: var(--accent);
-      background: var(--accent-soft);
-      color: #166534;
-    }
-
-    .block-tag.warn {
-      border-color: #eab308;
-      background: #fefce8;
-      color: #854d0e;
-    }
-
-    .block-tag.err {
-      border-color: var(--danger);
-      background: var(--danger-soft);
-      color: var(--danger);
-    }
-
-    .row {
-      display: flex;
-      align-items: flex-end;
+    .result-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
       gap: 10px;
-      flex-wrap: wrap;
     }
 
-    .flex-1 { flex: 1 1 0; }
+    @media (max-width: 720px) {
+      .result-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
 
-    .field-group {
+    .result-card {
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+      background: var(--bg-card-soft);
+      padding: 9px 10px;
       display: flex;
       flex-direction: column;
       gap: 4px;
-      min-width: 0;
     }
 
-    .field-label {
-      font-size: 12px;
-      font-weight: 600;
-      color: #374151;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .badge {
-      font-size: 10px;
+    .result-title {
+      font-size: 11px;
       text-transform: uppercase;
-      letter-spacing: 0.06em;
-      padding: 1px 5px;
-      border-radius: 999px;
-      border: 1px solid var(--border);
+      letter-spacing: 0.12em;
       color: var(--muted);
     }
 
+    .result-main {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .result-main.miss {
+      color: var(--ring-miss);
+    }
+
+    .result-main.outer {
+      color: var(--ring-outer);
+    }
+
+    .result-main.inner {
+      color: var(--ring-inner);
+    }
+
+    .result-main.bull {
+      color: var(--ring-bull);
+    }
+
+    .result-sub {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .handle-text {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: #6b7280;
+      word-break: break-all;
+    }
+
+    .https-note {
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    .https-note strong {
+      color: var(--ink);
+    }
+
+    /* Admin */
+
+    .admin-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    @media (max-width: 720px) {
+      .admin-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      font-size: 11px;
+    }
+
+    .field-label {
+      display: flex;
+      justify-content: space-between;
+      gap: 6px;
+      color: var(--muted);
+    }
+
+    .field-label span.title {
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #111827;
+      font-size: 10px;
+    }
+
+    .field-label small {
+      font-size: 10px;
+    }
+
     .input-shell {
-      border-radius: var(--radius-md);
+      border-radius: 999px;
       border: 1px solid var(--border-strong);
-      padding: 6px 8px;
       background: #f9fafb;
+      padding: 5px 9px;
       display: flex;
       align-items: center;
       gap: 6px;
@@ -404,106 +628,29 @@
       border: none;
       outline: none;
       background: transparent;
+      color: #111827;
+      font-family: var(--sans);
+      font-size: 12px;
       width: 100%;
-      font-size: 14px;
-      font-family: inherit;
-      padding: 2px 0;
-      color: var(--ink);
     }
 
     .input-shell input::placeholder {
       color: #9ca3af;
     }
 
-    .input-unit {
-      font-size: 11px;
+    .input-suffix {
+      font-size: 10px;
       color: var(--muted);
       white-space: nowrap;
     }
 
-    .helper {
-      font-size: 11px;
+    .field-note {
+      font-size: 10px;
       color: var(--muted);
     }
 
-    .divider {
-      height: 1px;
-      background: linear-gradient(to right, transparent, var(--border), transparent);
-      margin: 4px 0;
-    }
-
-    /* RESULT GRID */
-    .grid-two {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0,1fr));
-      gap: 10px;
-    }
-
-    @media (max-width: 720px) {
-      .grid-two {
-        grid-template-columns: minmax(0,1fr);
-      }
-    }
-
-    .result-box {
-      border-radius: var(--radius-md);
-      border: 1px dashed var(--border);
-      padding: 8px 9px;
-      font-size: 13px;
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-      background: #f9fafb;
-    }
-
-    .result-label {
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--muted);
-    }
-
-    .result-value {
+    .mono {
       font-family: var(--mono);
-      font-size: 13px;
-    }
-
-    .result-value.positive {
-      color: #166534;
-    }
-
-    .result-value.negative {
-      color: var(--danger);
-    }
-
-    .small-note {
-      font-size: 11px;
-      color: var(--muted);
-      display: flex;
-      justify-content: space-between;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
-
-    /* LOG */
-    .log-box {
-      border-radius: var(--radius-md);
-      border: 1px solid var(--border);
-      padding: 8px 9px;
-      background: #0f172a;
-      color: #e5e7eb;
-      font-family: var(--mono);
-      font-size: 11px;
-      white-space: pre-wrap;
-      max-height: 200px;
-      overflow-y: auto;
-    }
-
-    .text-danger {
-      color: var(--danger);
-    }
-    .text-muted {
-      color: var(--muted);
     }
   </style>
 </head>
@@ -512,221 +659,190 @@
     <!-- HEADER -->
     <header class="topbar">
       <div class="brand">
-        <div class="brand-line1">Encrypted Learning Path</div>
-        <div class="brand-line2">Private module completion • Zama FHEVM + Relayer SDK</div>
+        <div class="brand-title">Secret Darts</div>
+        <div class="brand-sub">Click the target, encrypt (x, y), and let Zama FHEVM classify your hit.</div>
       </div>
-      <div class="status-row">
-        <div class="field-chip">
-          Network: <span id="netLabel" class="mono">—</span>
+      <div class="topbar-right">
+        <div class="chip-row">
+          <div class="chip">
+            <span class="chip-label">Network</span>
+            <span id="netLabel" class="chip-value muted">—</span>
+          </div>
+          <div class="chip">
+            <span class="chip-label">You</span>
+            <span id="accountLabel" class="chip-value muted">not connected</span>
+          </div>
+          <div class="chip">
+            <span class="chip-label">Contract</span>
+            <span id="contractLabel" class="chip-value mono">—</span>
+          </div>
         </div>
-        <div class="field-chip">
-          Contract: <span id="contractLabel" class="mono">—</span>
-        </div>
-        <div class="field-chip">
-          You: <span id="accountLabel" class="mono">not connected</span>
-        </div>
-        <button id="connectBtn" class="btn btn-primary">Connect wallet</button>
+        <button id="connectBtn" class="btn-main">
+          <span class="dot"></span>
+          <span id="connectBtnLabel">Connect wallet</span>
+        </button>
       </div>
     </header>
 
-    <div class="layout">
-      <!-- SIDEBAR: course modules -->
-      <aside class="sidebar">
-        <div class="sidebar-title">Course modules</div>
-        <ol id="moduleList" class="module-list">
-          <!-- Filled by JS -->
-        </ol>
-        <div class="sidebar-note">
-          The contract only sees encrypted scores and pass flags. This sidebar is
-          a local view of your path; unlocking is derived from your decrypted results.
+    <main class="layout">
+      <!-- LEFT COLUMN: RESULT + ADMIN -->
+      <section class="card">
+        <div class="card-inner">
+          <!-- Result card -->
+          <div class="card-header">
+            <div>
+              <div class="card-title">2. Decrypt your ring</div>
+              <div class="card-sub">
+                The contract stores only encrypted coordinates and ring code. Decrypt the last shot locally via the Relayer.
+              </div>
+            </div>
+            <span id="decryptTag" class="pill warn">decrypt</span>
+          </div>
+
+          <div class="status-line">
+            <span>After throwing a dart, use <strong>Decrypt last shot</strong> to reveal where it landed.</span>
+            <button id="decryptBtn" class="btn btn-sm btn-ghost">Decrypt last shot</button>
+          </div>
+
+          <div class="result-grid">
+            <div class="result-card">
+              <div class="result-title">Ring outcome</div>
+              <div id="ringMain" class="result-main miss">—</div>
+              <div id="ringSub" class="result-sub">
+                No shot recorded yet.
+              </div>
+            </div>
+            <div class="result-card">
+              <div class="result-title">Distance & HTTPS</div>
+              <div id="distMain" class="result-main" style="font-size:16px;">—</div>
+              <div id="distSub" class="result-sub">Squared distance to center in encrypted space.</div>
+              <div id="httpsNote" class="https-note" style="margin-top:4px;">
+                Decryption runs best over <strong>HTTPS</strong> or a secure localhost origin.
+              </div>
+            </div>
+          </div>
+
+          <div class="result-card">
+            <div class="result-title">Last encrypted handles</div>
+            <div class="result-sub">These are ciphertext handles only; clear values stay inside your browser.</div>
+            <div id="handlesCoords" class="handle-text" style="margin-top:4px;">
+              x: —<br />y: —
+            </div>
+            <div id="handlesDistRing" class="handle-text" style="margin-top:4px;">
+              dist²: —<br />ring: —
+            </div>
+          </div>
+
+          <!-- Admin -->
+          <div class="card-header" style="margin-top:6px;">
+            <div>
+              <div class="card-title">3. Admin · Board radii</div>
+              <div class="card-sub">
+                Owner-only: configure squared distance thresholds for outer / inner / bull rings.
+              </div>
+            </div>
+            <span id="adminRoleTag" class="pill">role: unknown</span>
+          </div>
+
+          <div class="admin-grid">
+            <div class="field">
+              <label class="field-label">
+                <span class="title">Outer radius²</span>
+                <small>uint16</small>
+              </label>
+              <div class="input-shell">
+                <input id="outerInput" type="number" min="1" max="65535" placeholder="e.g. 3200" />
+                <span class="input-suffix">dist²</span>
+              </div>
+            </div>
+            <div class="field">
+              <label class="field-label">
+                <span class="title">Inner radius²</span>
+                <small>uint16</small>
+              </label>
+              <div class="input-shell">
+                <input id="innerInput" type="number" min="1" max="65535" placeholder="e.g. 1200" />
+                <span class="input-suffix">dist²</span>
+              </div>
+            </div>
+            <div class="field">
+              <label class="field-label">
+                <span class="title">Bull radius²</span>
+                <small>uint16</small>
+              </label>
+              <div class="input-shell">
+                <input id="bullInput" type="number" min="1" max="65535" placeholder="e.g. 200" />
+                <span class="input-suffix">dist²</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="status-line" style="margin-top:4px;">
+            <button id="refreshBoardBtn" class="btn btn-sm btn-ghost">Refresh from contract</button>
+            <button id="updateBoardBtn" class="btn btn-sm btn-ghost">Update board config</button>
+          </div>
+          <div id="adminStatus" class="status-line"></div>
         </div>
-      </aside>
+      </section>
 
-      <!-- MAIN -->
-      <main class="main">
-        <!-- BLOCK 1: submit attempt -->
-        <section class="block">
-          <div class="block-header">
+      <!-- RIGHT COLUMN: BOARD + THROW -->
+      <section class="card">
+        <div class="card-inner board-wrapper">
+          <div class="card-header">
             <div>
-              <div class="block-title">1. Submit encrypted module attempt</div>
-              <div class="block-sub">
-                Choose a module and send an encrypted score. The contract evaluates pass/fail fully under FHE.
+              <div class="card-title">1. Throw an encrypted dart</div>
+              <div class="card-sub">
+                Click anywhere on the target to choose coordinates. Only the encrypted (x, y) are sent to the FHEVM contract.
               </div>
             </div>
-            <span id="moduleMetaTag" class="block-tag">module: n/a</span>
+            <span id="boardStateTag" class="pill">board: n/a</span>
           </div>
 
-          <div class="row">
-            <div class="field-group flex-1">
-              <div class="field-label">
-                Active module
-              </div>
-              <div class="input-shell">
-                <select id="moduleSelect" style="border:none;outline:none;background:transparent;width:100%;font-size:14px;font-family:inherit;">
-                  <!-- options from JS -->
-                </select>
-              </div>
+          <div class="dart-board-container">
+            <div id="dartBoard" class="dart-board">
+              <div class="dart-axis x"></div>
+              <div class="dart-axis y"></div>
+              <div class="dart-ring outer"></div>
+              <div class="dart-ring inner"></div>
+              <div class="dart-ring bull"></div>
+              <div id="dartMarker" class="dart-click-marker"></div>
             </div>
-            <div class="field-group" style="width:160px;">
-              <div class="field-label">
-                Score
-                <span class="badge">uint16 • encrypted</span>
-              </div>
-              <div class="input-shell">
-                <input id="scoreInput" type="number" min="0" max="65535" placeholder="e.g. 82" />
-                <span class="input-unit">points</span>
-              </div>
-            </div>
-            <button id="submitAttemptBtn" class="btn btn-primary">Encrypt &amp; submit</button>
           </div>
 
-          <div id="submitStatus" class="helper"></div>
-        </section>
-
-        <!-- BLOCK 2: private result -->
-        <section class="block">
-          <div class="block-header">
-            <div>
-              <div class="block-title">2. Inspect your encrypted result</div>
-              <div class="block-sub">
-                Decrypt your own score and pass flag with EIP-712 signing. The cleartext never touches the contract.
+          <div class="board-meta">
+            <div class="section-label">Local selection</div>
+            <div class="coords-row">
+              <div class="badge">
+                <span>Coordinates:</span>
+                <span id="coordDisplay" class="mono">(none)</span>
               </div>
             </div>
-            <span id="decryptTag" class="block-tag warn">private decrypt: HTTPS recommended</span>
-          </div>
-
-          <div class="row">
-            <button id="decryptPrivateBtn" class="btn btn-ghost btn-small">
-              Decrypt for me (signed)
+            <div class="coords-row" style="margin-top:2px;">
+              <div class="badge">
+                <span class="badge-dot outer"></span>
+                <span>Outer ring</span>
+              </div>
+              <div class="badge">
+                <span class="badge-dot inner"></span>
+                <span>Inner ring</span>
+              </div>
+              <div class="badge">
+                <span class="badge-dot bull"></span>
+                <span>Bull</span>
+              </div>
+              <div class="badge">
+                <span class="badge-dot miss"></span>
+                <span>Miss</span>
+              </div>
+            </div>
+            <button id="throwBtn" class="btn btn-accent" style="margin-top:6px;">
+              Throw encrypted dart
             </button>
-            <div class="helper" id="decryptHint">
-              The app uses userDecrypt from the Relayer SDK with a short-lived keypair.
-            </div>
+            <div id="throwStatus" class="status-line"></div>
           </div>
-
-          <div class="grid-two">
-            <div class="result-box">
-              <div class="result-label">Last decrypted score</div>
-              <div id="resultScore" class="result-value">—</div>
-              <div class="helper" id="resultScoreHandle">Handle: —</div>
-            </div>
-            <div class="result-box">
-              <div class="result-label">Last decrypted pass flag</div>
-              <div id="resultPass" class="result-value">—</div>
-              <div class="helper" id="resultPassHandle">Handle: —</div>
-            </div>
-          </div>
-
-          <div class="small-note">
-            <span>“Passed” is stored as an encrypted boolean on-chain.</span>
-            <span id="localUnlockNote"></span>
-          </div>
-        </section>
-
-        <!-- BLOCK 3: public certificate -->
-        <section class="block">
-          <div class="block-header">
-            <div>
-              <div class="block-title">3. Public certificate (opt-in)</div>
-              <div class="block-sub">
-                Make your pass flag globally decryptable, then anyone can verify completion for a given address and module.
-              </div>
-            </div>
-            <span id="certTag" class="block-tag">certificate: private</span>
-          </div>
-
-          <div class="row">
-            <button id="makePublicBtn" class="btn btn-small">
-              Enable public certificate for active module
-            </button>
-            <div id="makePublicStatus" class="helper"></div>
-          </div>
-
-          <div class="divider"></div>
-
-          <div class="row">
-            <div class="field-group flex-1">
-              <div class="field-label">Learner address</div>
-              <div class="input-shell">
-                <input id="checkAddressInput" type="text" placeholder="0x…" />
-              </div>
-            </div>
-            <div class="field-group" style="width:130px;">
-              <div class="field-label">Module ID</div>
-              <div class="input-shell">
-                <input id="checkModuleInput" type="number" min="1" value="1" />
-              </div>
-            </div>
-            <button id="checkCertBtn" class="btn btn-ghost btn-small">
-              Check public certificate
-            </button>
-          </div>
-
-          <div class="grid-two">
-            <div class="result-box">
-              <div class="result-label">Public certificate status</div>
-              <div id="certResult" class="result-value">—</div>
-            </div>
-            <div class="result-box">
-              <div class="result-label">Raw pass handle</div>
-              <div id="certHandle" class="result-value mono" style="font-size:11px;word-break:break-all;">—</div>
-            </div>
-          </div>
-        </section>
-
-        <!-- BLOCK 3.5: admin – configure modules -->
-        <section class="block" id="adminBlock">
-          <div class="block-header">
-            <div>
-              <div class="block-title">Admin · Configure modules</div>
-              <div class="block-sub">
-                Owner-only: set encrypted passing scores for each module ID.
-              </div>
-            </div>
-            <span class="block-tag" id="adminOwnerTag">role: unknown</span>
-          </div>
-
-          <div class="row">
-            <div class="field-group flex-1">
-              <div class="field-label">Module ID</div>
-              <div class="input-shell">
-                <input id="adminModuleId" type="number" min="1" value="1" />
-              </div>
-            </div>
-            <div class="field-group flex-1">
-              <div class="field-label">Prerequisite module ID</div>
-              <div class="input-shell">
-                <input id="adminPrereqId" type="number" min="0" value="0" />
-              </div>
-            </div>
-            <div class="field-group flex-1">
-              <div class="field-label">
-                Passing score
-                <span class="badge">uint16 · encrypted</span>
-              </div>
-              <div class="input-shell">
-                <input id="adminPassingScore" type="number" min="0" max="65535" placeholder="e.g. 60" />
-                <span class="input-unit">points</span>
-              </div>
-            </div>
-            <button id="adminSetModuleBtn" class="btn btn-small">
-              Encrypt &amp; create / update
-            </button>
-          </div>
-
-          <div id="adminStatus" class="helper"></div>
-        </section>
-
-        <!-- BLOCK 4: technical log -->
-        <section class="block">
-          <div class="block-header">
-            <div class="block-title">Technical log</div>
-            <button id="reloadBtn" class="btn btn-small btn-ghost">Reload state</button>
-          </div>
-          <div id="log" class="log-box"></div>
-        </section>
-      </main>
-    </div>
+        </div>
+      </section>
+    </main>
   </div>
 
   <!-- Ethers + Relayer SDK -->
@@ -737,126 +853,131 @@
     await initSDK();
 
     /* ---------- CONFIG ---------- */
-    const CONTRACT_ADDRESS = "0x040Bdf8c95d5EaAEecAF23c8A2e625f218c73c79";
-    const CHAIN_ID_HEX = "0xaa36a7"; // Ethereum Sepolia
+    const CONTRACT_ADDRESS = "0xc7808D5dA3745632A818CEf9bD8B76CD081845c4";
+    const CHAIN_ID_HEX = "0xaa36a7"; // Sepolia
 
     const ORIGIN = window.location.origin;
-    const HAS_LOCAL_PROXY = ORIGIN.includes("localhost:3443") || ORIGIN.includes("127.0.0.1:3443");
+    const HAS_LOCAL_PROXY =
+      ORIGIN.includes("localhost:3443") || ORIGIN.includes("127.0.0.1:3443");
     const RELAYER_URL = HAS_LOCAL_PROXY ? `${ORIGIN}/relayer` : "https://relayer.testnet.zama.org";
     const GATEWAY_URL = HAS_LOCAL_PROXY ? `${ORIGIN}/gateway` : "https://gateway.testnet.zama.org";
 
-    const IS_HTTPS = location.protocol === "https:";
+    const IS_HTTPS = location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1";
 
-    // ABI for EncryptedCourseProgress
+    // ABI for SecretDarts
     const ABI = [
-      { type:"function", name:"owner", stateMutability:"view", inputs:[], outputs:[{type:"address"}] },
-      { type:"function", name:"transferOwnership", stateMutability:"nonpayable", inputs:[{name:"newOwner", type:"address"}], outputs:[] },
+      { type: "function", name: "owner", stateMutability: "view", inputs: [], outputs: [{ type: "address" }] },
+      { type: "function", name: "transferOwnership", stateMutability: "nonpayable", inputs: [{ name: "newOwner", type: "address" }], outputs: [] },
 
-      { type:"function", name:"createModule", stateMutability:"nonpayable", inputs:[
-          {name:"moduleId", type:"uint256"},
-          {name:"prerequisiteModuleId", type:"uint256"},
-          {name:"encPassingScore", type:"bytes32"},
-          {name:"proof", type:"bytes"}
-        ], outputs:[] },
-
-      { type:"function", name:"updateModule", stateMutability:"nonpayable", inputs:[
-          {name:"moduleId", type:"uint256"},
-          {name:"newPrerequisiteModuleId", type:"uint256"},
-          {name:"encPassingScore", type:"bytes32"},
-          {name:"proof", type:"bytes"}
-        ], outputs:[] },
-
-      { type:"function", name:"getModuleMeta", stateMutability:"view", inputs:[
-          {name:"moduleId", type:"uint256"}
-        ], outputs:[
-          {type:"bool"},
-          {type:"uint256"}
-        ] },
-
-      { type:"function", name:"submitModuleAttempt", stateMutability:"nonpayable", inputs:[
-          {name:"moduleId", type:"uint256"},
-          {name:"encScore", type:"bytes32"},
-          {name:"proof", type:"bytes"}
-        ], outputs:[] },
-
-      { type:"function", name:"enablePublicCertificate", stateMutability:"nonpayable", inputs:[
-          {name:"moduleId", type:"uint256"}
-        ], outputs:[] },
-
-      { type:"function", name:"getMyModuleHandles", stateMutability:"view", inputs:[
-          {name:"moduleId", type:"uint256"}
-        ], outputs:[
-          {type:"bytes32"},
-          {type:"bytes32"},
-          {type:"bool"}
-        ] },
-
-      { type:"function", name:"getModulePassHandlePublic", stateMutability:"view", inputs:[
-          {name:"learner", type:"address"},
-          {name:"moduleId", type:"uint256"}
-        ], outputs:[
-          {type:"bytes32"},
-          {type:"bool"}
-        ] },
-
-      { type:"function", name:"getModulePolicyHandle", stateMutability:"view", inputs:[
-          {name:"moduleId", type:"uint256"}
-        ], outputs:[
-          {type:"bytes32"}
-        ] }
-    ];
-
-    // A simple frontend-only course map (names only, contract cares only about IDs)
-    const COURSE_MODULES = [
-      { id: 1, name: "Module 1 · FHE basics", desc: "Warm-up quiz on encrypted computation." },
-      { id: 2, name: "Module 2 · Encrypted scores", desc: "Scoring logic and comparison under FHE." },
-      { id: 3, name: "Module 3 · Access control", desc: "ACL, user decrypt and public flags." },
-      { id: 4, name: "Module 4 · Capstone", desc: "Final assignment and certificate." }
+      {
+        type: "function",
+        name: "setBoardConfig",
+        stateMutability: "nonpayable",
+        inputs: [
+          { name: "_bullRadius2", type: "uint16" },
+          { name: "_innerRadius2", type: "uint16" },
+          { name: "_outerRadius2", type: "uint16" }
+        ],
+        outputs: []
+      },
+      {
+        type: "function",
+        name: "bullRadius2",
+        stateMutability: "view",
+        inputs: [],
+        outputs: [{ type: "uint16" }]
+      },
+      {
+        type: "function",
+        name: "innerRadius2",
+        stateMutability: "view",
+        inputs: [],
+        outputs: [{ type: "uint16" }]
+      },
+      {
+        type: "function",
+        name: "outerRadius2",
+        stateMutability: "view",
+        inputs: [],
+        outputs: [{ type: "uint16" }]
+      },
+      {
+        type: "function",
+        name: "boardConfigured",
+        stateMutability: "view",
+        inputs: [],
+        outputs: [{ type: "bool" }]
+      },
+      {
+        type: "function",
+        name: "throwDart",
+        stateMutability: "nonpayable",
+        inputs: [
+          { name: "encX", type: "bytes32" },
+          { name: "encY", type: "bytes32" },
+          { name: "proof", type: "bytes" }
+        ],
+        outputs: []
+      },
+      {
+        type: "function",
+        name: "getMyLastShotHandles",
+        stateMutability: "view",
+        inputs: [],
+        outputs: [
+          { type: "bytes32" },
+          { type: "bytes32" },
+          { type: "bytes32" },
+          { type: "bytes32" },
+          { type: "bool" }
+        ]
+      },
+      {
+        type: "function",
+        name: "getPlayerRingHandle",
+        stateMutability: "view",
+        inputs: [{ name: "player", type: "address" }],
+        outputs: [
+          { type: "bytes32" },
+          { type: "bool" }
+        ]
+      }
     ];
 
     /* ---------- DOM ---------- */
     const $ = (id) => document.getElementById(id);
 
-    const netLabelEl        = $("netLabel");
-    const contractLabelEl   = $("contractLabel");
-    const accountLabelEl    = $("accountLabel");
-    const connectBtn        = $("connectBtn");
+    const netLabelEl = $("netLabel");
+    const accountLabelEl = $("accountLabel");
+    const contractLabelEl = $("contractLabel");
 
-    const moduleListEl      = $("moduleList");
-    const moduleSelectEl    = $("moduleSelect");
-    const moduleMetaTagEl   = $("moduleMetaTag");
+    const connectBtn = $("connectBtn");
+    const connectBtnLabelEl = $("connectBtnLabel");
 
-    const scoreInputEl      = $("scoreInput");
-    const submitAttemptBtn  = $("submitAttemptBtn");
-    const submitStatusEl    = $("submitStatus");
+    const dartBoardEl = $("dartBoard");
+    const dartMarkerEl = $("dartMarker");
+    const coordDisplayEl = $("coordDisplay");
+    const throwBtn = $("throwBtn");
+    const throwStatusEl = $("throwStatus");
 
-    const decryptPrivateBtn = $("decryptPrivateBtn");
-    const decryptHintEl     = $("decryptHint");
-    const decryptTagEl      = $("decryptTag");
-    const resultScoreEl     = $("resultScore");
-    const resultScoreHandleEl = $("resultScoreHandle");
-    const resultPassEl      = $("resultPass");
-    const resultPassHandleEl = $("resultPassHandle");
-    const localUnlockNoteEl = $("localUnlockNote");
+    const decryptBtn = $("decryptBtn");
+    const decryptTagEl = $("decryptTag");
+    const ringMainEl = $("ringMain");
+    const ringSubEl = $("ringSub");
+    const distMainEl = $("distMain");
+    const distSubEl = $("distSub");
+    const httpsNoteEl = $("httpsNote");
+    const handlesCoordsEl = $("handlesCoords");
+    const handlesDistRingEl = $("handlesDistRing");
+    const boardStateTagEl = $("boardStateTag");
 
-    const makePublicBtn     = $("makePublicBtn");
-    const makePublicStatusEl= $("makePublicStatus");
-    const certTagEl         = $("certTag");
-    const checkAddressInputEl = $("checkAddressInput");
-    const checkModuleInputEl  = $("checkModuleInput");
-    const checkCertBtn      = $("checkCertBtn");
-    const certResultEl      = $("certResult");
-    const certHandleEl      = $("certHandle");
-
-    const adminOwnerTagEl     = $("adminOwnerTag");
-    const adminModuleIdEl     = $("adminModuleId");
-    const adminPrereqIdEl     = $("adminPrereqId");
-    const adminPassingScoreEl = $("adminPassingScore");
-    const adminSetModuleBtn   = $("adminSetModuleBtn");
-    const adminStatusEl       = $("adminStatus");
-
-    const reloadBtn         = $("reloadBtn");
-    const logEl             = $("log");
+    const adminRoleTagEl = $("adminRoleTag");
+    const outerInputEl = $("outerInput");
+    const innerInputEl = $("innerInput");
+    const bullInputEl = $("bullInput");
+    const refreshBoardBtn = $("refreshBoardBtn");
+    const updateBoardBtn = $("updateBoardBtn");
+    const adminStatusEl = $("adminStatus");
 
     contractLabelEl.textContent = shortAddress(CONTRACT_ADDRESS);
 
@@ -866,18 +987,38 @@
       signer: null,
       contract: null,
       relayer: null,
-      userAddress: null,
+      account: null,
       owner: null,
-      activeModuleId: COURSE_MODULES[0].id,
-      passedModules: new Set() // purely local, updated when decrypted
+      lastClick: null // { xUnits, yUnits }
     };
 
-    /* ---------- HELPERS ---------- */
+    /* ---------- HELPERS: LOGGING + BIGINT ---------- */
+    const safeStringify = (obj) =>
+      JSON.stringify(obj, (k, v) => (typeof v === "bigint" ? v.toString() + "n" : v), 2);
+
     function appendLog(...parts) {
-      const msg = parts.map(x => typeof x === "string" ? x : JSON.stringify(x, null, 2)).join(" ");
-      logEl.textContent += msg + "\n";
-      logEl.scrollTop = logEl.scrollHeight;
-      console.log("[log]", ...parts);
+      const msg = parts
+        .map((x) =>
+          typeof x === "string"
+            ? x
+            : (() => {
+                try {
+                  return safeStringify(x);
+                } catch {
+                  return String(x);
+                }
+              })()
+        )
+        .join(" ");
+      console.log("[secret-darts]", msg);
+    }
+
+    function normalizeDecryptedValue(v) {
+      if (v == null) return null;
+      if (typeof v === "boolean") return v ? 1n : 0n;
+      if (typeof v === "bigint" || typeof v === "number") return BigInt(v);
+      if (typeof v === "string") return BigInt(v);
+      return BigInt(v.toString());
     }
 
     function shortAddress(addr) {
@@ -901,6 +1042,7 @@
       );
       netLabelEl.textContent = cur || "unknown";
       if (cur === CHAIN_ID_HEX) return true;
+
       try {
         await window.ethereum.request({
           method: "wallet_switchEthereumChain",
@@ -910,13 +1052,15 @@
         if (e && e.code === 4902) {
           await window.ethereum.request({
             method: "wallet_addEthereumChain",
-            params: [{
-              chainId: CHAIN_ID_HEX,
-              chainName: "Sepolia",
-              nativeCurrency: { name: "Sepolia ETH", symbol: "SEP", decimals: 18 },
-              rpcUrls: ["https://rpc.sepolia.org"],
-              blockExplorerUrls: ["https://sepolia.etherscan.io"]
-            }]
+            params: [
+              {
+                chainId: CHAIN_ID_HEX,
+                chainName: "Sepolia",
+                nativeCurrency: { name: "Sepolia ETH", symbol: "SEP", decimals: 18 },
+                rpcUrls: ["https://rpc.sepolia.org"],
+                blockExplorerUrls: ["https://sepolia.etherscan.io"]
+              }
+            ]
           });
           await window.ethereum.request({
             method: "wallet_switchEthereumChain",
@@ -926,6 +1070,7 @@
           throw e;
         }
       }
+
       const after = normalizeChainId(
         await window.ethereum.request({ method: "eth_chainId" }).catch(() => null)
       );
@@ -933,73 +1078,50 @@
       return after === CHAIN_ID_HEX;
     }
 
+    // Build value picker from userDecrypt output
     function buildValuePicker(out, pairs) {
       let map = {};
-      const cv = out && out.clearValues;
-      if (Array.isArray(cv) && pairs && pairs.length) {
-        pairs.forEach((p, i) => {
-          const h = String(p.handle || p).toLowerCase();
-          map[h] = cv[i];
-        });
-      }
-      if (!Object.keys(map).length && typeof out?.abiEncodedClearValues === "string") {
-        const hex = out.abiEncodedClearValues.startsWith("0x")
-          ? out.abiEncodedClearValues.slice(2)
-          : out.abiEncodedClearValues;
-        const vals = [];
-        for (let i = 0; i + 64 <= hex.length; i += 64) {
-          vals.push("0x" + hex.slice(i, i + 64));
+      if (out && typeof out === "object") {
+        if (Array.isArray(out.clearValues) && pairs && pairs.length) {
+          pairs.forEach((p, i) => {
+            const h = String(p.handle || p).toLowerCase();
+            map[h] = out.clearValues[i];
+          });
         }
-        pairs.forEach((p, i) => {
-          const h = String(p.handle || p).toLowerCase();
-          try {
-            map[h] = BigInt(vals[i] || 0);
-          } catch {
-            map[h] = 0n;
+
+        if (!Object.keys(map).length && typeof out.abiEncodedClearValues === "string" && pairs && pairs.length) {
+          const raw = out.abiEncodedClearValues.startsWith("0x")
+            ? out.abiEncodedClearValues.slice(2)
+            : out.abiEncodedClearValues;
+          const vals = [];
+          for (let i = 0; i + 64 <= raw.length; i += 64) {
+            const chunk = "0x" + raw.slice(i, i + 64);
+            try {
+              vals.push(BigInt(chunk));
+            } catch {
+              vals.push(0n);
+            }
           }
-        });
+          pairs.forEach((p, i) => {
+            const h = String(p.handle || p).toLowerCase();
+            map[h] = vals[i] ?? 0n;
+          });
+        }
+
+        if (!Object.keys(map).length) {
+          for (const [k, v] of Object.entries(out)) {
+            map[k.toLowerCase()] = v;
+          }
+        }
       }
-      if (!Object.keys(map).length && out && typeof out === "object") {
-        map = out;
-      }
+
       return (handle) => {
         if (!handle) return null;
-        const k1 = String(handle);
-        const k2 = k1.toLowerCase();
-        let v = map[k2] ?? map[k1] ?? null;
-        try {
-          if (v == null) return null;
-          if (typeof v === "bigint" || typeof v === "number") return BigInt(v);
-          if (typeof v === "string") {
-            return v.startsWith("0x") ? BigInt(v) : BigInt(v);
-          }
-          return BigInt(v.toString());
-        } catch {
-          return 0n;
-        }
+        const k = String(handle).toLowerCase();
+        const v = map[k];
+        if (v === undefined) return null;
+        return normalizeDecryptedValue(v);
       };
-    }
-
-    async function publicDecryptMany(relayer, items) {
-      const pairs = Array.isArray(items) ? items : [items];
-      const isObj = pairs.length && typeof pairs[0] === "object" && "handle" in pairs[0];
-      try {
-        appendLog("publicDecrypt pairs:", pairs);
-        const out = await relayer.publicDecrypt(pairs);
-        appendLog("publicDecrypt result (pairs):", out);
-        return { out, pairs };
-      } catch (e1) {
-        appendLog("publicDecrypt pairs failed, retry with handles:", e1?.message || e1);
-        try {
-          const handlesOnly = isObj ? pairs.map(p => p.handle) : pairs.map(String);
-          const out = await relayer.publicDecrypt(handlesOnly);
-          appendLog("publicDecrypt result (handles):", out);
-          return { out, pairs };
-        } catch (e2) {
-          appendLog("publicDecrypt failed:", e2?.message || e2);
-          throw e1 || e2;
-        }
-      }
     }
 
     async function userDecryptMany(relayer, signer, pairs) {
@@ -1029,139 +1151,78 @@
       return { out, pairs };
     }
 
-    function updateDecryptTag() {
+    function updateHttpsUi() {
       if (IS_HTTPS) {
-        decryptTagEl.textContent = "private decrypt: HTTPS ✓";
-        decryptTagEl.classList.remove("warn");
-        decryptTagEl.classList.add("ok");
+        decryptTagEl.textContent = "decrypt:✓";
+        decryptTagEl.classList.remove("warn", "bad");
+        decryptTagEl.classList.add("good");
+        httpsNoteEl.innerHTML =
+          'Decryptions are running in a <strong>secure context</strong>.';
       } else {
-        decryptTagEl.textContent = "private decrypt: open via HTTPS for full support";
-        decryptTagEl.classList.remove("ok");
+        decryptTagEl.textContent = "decrypt";
+        decryptTagEl.classList.remove("good");
         decryptTagEl.classList.add("warn");
+        httpsNoteEl.innerHTML =
+          'Running on a non-HTTPS origin. <strong>userDecrypt</strong> may be limited by browser security.';
       }
     }
 
-    function updateCertificateTag(isPublic) {
-      if (isPublic) {
-        certTagEl.textContent = "certificate: public (pass flag)";
-        certTagEl.classList.remove("err");
-        certTagEl.classList.add("ok");
-      } else {
-        certTagEl.textContent = "certificate: private";
-        certTagEl.classList.remove("ok");
-        certTagEl.classList.remove("err");
+    function encodeCoordForUint16(n) {
+      // Map from signed [-32768, 32767] to uint16; here n is small (e.g. [-180, 180])
+      const asInt = Math.trunc(n);
+      const encoded = (asInt + 65536) % 65536;
+      return encoded;
+    }
+
+    function decodeCoordFromUint16(v) {
+      const num = Number(v);
+      return num > 32767 ? num - 65536 : num;
+    }
+
+    function setBoardStateTag(configured, radii) {
+      if (!configured) {
+        boardStateTagEl.textContent = "board: not configured";
+        boardStateTagEl.classList.remove("good");
+        boardStateTagEl.classList.add("warn");
+        return;
       }
+      const outer = radii.outer;
+      const inner = radii.inner;
+      const bull = radii.bull;
+      boardStateTagEl.textContent = `board: bull ${bull}, inner ${inner}, outer ${outer}`;
+      boardStateTagEl.classList.remove("warn");
+      boardStateTagEl.classList.add("good");
     }
 
-    function updateModuleMetaTag(prereqId) {
-      const active = state.activeModuleId;
-      let meta = `module ID: ${active}`;
-      if (prereqId && prereqId !== 0n && prereqId !== 0) {
-        meta += ` • prerequisite: ${prereqId}`;
+    function setRingUi(ringNum) {
+      const classes = ["miss", "outer", "inner", "bull"];
+      ringMainEl.classList.remove("miss", "outer", "inner", "bull");
+
+      let label = "—";
+      let desc = "No shot recorded yet.";
+      let cls = "miss";
+
+      if (ringNum === 0) {
+        label = "Miss";
+        desc = "Your encrypted distance landed outside the scoring rings.";
+        cls = "miss";
+      } else if (ringNum === 1) {
+        label = "Outer ring";
+        desc = "You hit the outer scoring ring under FHE.";
+        cls = "outer";
+      } else if (ringNum === 2) {
+        label = "Inner ring";
+        desc = "Clean inner ring hit – closer to the center.";
+        cls = "inner";
+      } else if (ringNum === 3) {
+        label = "Bull";
+        desc = "Bullseye! You nailed the center in encrypted space.";
+        cls = "bull";
       }
-      moduleMetaTagEl.textContent = meta;
-    }
 
-    function computeLocalStatuses() {
-      const done = state.passedModules;
-      const statuses = new Map(); // moduleId -> 'locked'|'ready'|'done'
-      COURSE_MODULES.forEach((m, idx) => {
-        if (done.has(m.id)) {
-          statuses.set(m.id, "done");
-        } else if (idx === 0) {
-          statuses.set(m.id, "ready");
-        } else {
-          const prevId = COURSE_MODULES[idx - 1].id;
-          statuses.set(m.id, done.has(prevId) ? "ready" : "locked");
-        }
-      });
-      return statuses;
-    }
-
-    function renderModuleSidebar() {
-      moduleListEl.innerHTML = "";
-      const statuses = computeLocalStatuses();
-
-      COURSE_MODULES.forEach((mod, idx) => {
-        const li = document.createElement("li");
-        li.className = "module-item";
-        if (mod.id === state.activeModuleId) li.classList.add("active");
-        li.dataset.moduleId = String(mod.id);
-
-        const idxEl = document.createElement("div");
-        idxEl.className = "module-index";
-        idxEl.textContent = String(idx + 1);
-
-        const body = document.createElement("div");
-        body.className = "module-body";
-
-        const nameEl = document.createElement("div");
-        nameEl.className = "module-name";
-        nameEl.textContent = mod.name;
-
-        const descEl = document.createElement("div");
-        descEl.className = "module-desc";
-        descEl.textContent = mod.desc;
-
-        const statusRow = document.createElement("div");
-        statusRow.className = "module-status";
-        const dot = document.createElement("span");
-        dot.className = "status-dot";
-        const st = statuses.get(mod.id) || "locked";
-        if (st === "ready") dot.classList.add("ready");
-        if (st === "locked") dot.classList.add("locked");
-        if (st === "done") dot.classList.add("done");
-        const label = document.createElement("span");
-        label.textContent =
-          st === "done" ? "Completed (locally)" :
-          st === "ready" ? "Ready to attempt" :
-          "Locked until previous module passes";
-
-        statusRow.appendChild(dot);
-        statusRow.appendChild(label);
-
-        body.appendChild(nameEl);
-        body.appendChild(descEl);
-        body.appendChild(statusRow);
-
-        li.appendChild(idxEl);
-        li.appendChild(body);
-
-        li.addEventListener("click", () => setActiveModule(mod.id));
-
-        moduleListEl.appendChild(li);
-      });
-    }
-
-    function renderModuleSelect() {
-      moduleSelectEl.innerHTML = "";
-      COURSE_MODULES.forEach(mod => {
-        const opt = document.createElement("option");
-        opt.value = String(mod.id);
-        opt.textContent = `${mod.id} · ${mod.name}`;
-        if (mod.id === state.activeModuleId) opt.selected = true;
-        moduleSelectEl.appendChild(opt);
-      });
-    }
-
-    function setActiveModule(moduleId) {
-      state.activeModuleId = Number(moduleId);
-      renderModuleSidebar();
-      renderModuleSelect();
-      checkModuleMeta();
-      clearResultDisplay(false);
-      localUnlockNoteEl.textContent = "";
-    }
-
-    function clearResultDisplay(clearHandles = true) {
-      resultScoreEl.textContent = "—";
-      resultScoreEl.classList.remove("positive", "negative");
-      resultPassEl.textContent = "—";
-      resultPassEl.classList.remove("positive", "negative");
-      if (clearHandles) {
-        resultScoreHandleEl.textContent = "Handle: —";
-        resultPassHandleEl.textContent = "Handle: —";
-      }
+      ringMainEl.textContent = label;
+      ringMainEl.classList.add(cls);
+      ringSubEl.textContent = desc;
     }
 
     /* ---------- CONNECTION ---------- */
@@ -1179,13 +1240,13 @@
           alert("Please install MetaMask or another EIP-1193 wallet.");
           return;
         }
+
         await ensureSepolia();
 
         const provider = new BrowserProvider(window.ethereum);
         await provider.send("eth_requestAccounts", []);
         const signer = await provider.getSigner();
-        const userAddress = await signer.getAddress();
-
+        const account = await signer.getAddress();
         const contract = new Contract(CONTRACT_ADDRESS, ABI, signer);
 
         appendLog("Creating Relayer instance…");
@@ -1201,35 +1262,32 @@
         state.signer = signer;
         state.contract = contract;
         state.relayer = relayer;
-        state.userAddress = userAddress;
+        state.account = account;
 
-        connectBtn.textContent = "Disconnect";
-        connectBtn.classList.remove("btn-primary");
-        accountLabelEl.textContent = shortAddress(userAddress);
+        connectBtnLabelEl.textContent = "Disconnect";
+        accountLabelEl.textContent = shortAddress(account);
+        accountLabelEl.classList.remove("muted");
+        netLabelEl.textContent = CHAIN_ID_HEX;
 
+        appendLog("Relayer ready:", { relayerUrl: RELAYER_URL, gatewayUrl: GATEWAY_URL });
+
+        // Detect owner
         try {
-          state.owner = await contract.owner();
-          appendLog("Owner:", state.owner);
-
-          const meLower = userAddress.toLowerCase();
-          const ownerLower = state.owner.toLowerCase();
-          if (adminOwnerTagEl) {
-            if (meLower === ownerLower) {
-              adminOwnerTagEl.textContent = "role: owner";
-              adminOwnerTagEl.classList.add("ok");
-            } else {
-              adminOwnerTagEl.textContent = "role: viewer";
-            }
+          const owner = await contract.owner();
+          state.owner = owner;
+          if (owner.toLowerCase() === account.toLowerCase()) {
+            adminRoleTagEl.textContent = "role: owner";
+            adminRoleTagEl.classList.add("good");
+          } else {
+            adminRoleTagEl.textContent = "role: viewer";
           }
-        } catch {
-          appendLog("Failed to read owner()");
-          if (adminOwnerTagEl) adminOwnerTagEl.textContent = "role: unknown";
+        } catch (e) {
+          appendLog("owner() read failed:", e?.message || e);
+          adminRoleTagEl.textContent = "role: unknown";
         }
 
-        appendLog("Relayer ready:", RELAYER_URL, GATEWAY_URL);
-        updateDecryptTag();
-
-        await reloadState();
+        updateHttpsUi();
+        await refreshBoardConfig();
       } catch (e) {
         const msg = e?.reason || e?.shortMessage || e?.message || String(e);
         appendLog("Connect failed:", msg);
@@ -1242,329 +1300,279 @@
       state.signer = null;
       state.contract = null;
       state.relayer = null;
-      state.userAddress = null;
+      state.account = null;
       state.owner = null;
 
-      connectBtn.textContent = "Connect wallet";
-      connectBtn.classList.add("btn-primary");
+      connectBtnLabelEl.textContent = "Connect wallet";
       accountLabelEl.textContent = "not connected";
-      clearResultDisplay(true);
-      makePublicStatusEl.textContent = "";
-      certResultEl.textContent = "—";
-      certHandleEl.textContent = "—";
-      updateCertificateTag(false);
-      if (adminOwnerTagEl) adminOwnerTagEl.textContent = "role: unknown";
+      accountLabelEl.classList.add("muted");
+      adminRoleTagEl.textContent = "role: unknown";
+      adminStatusEl.textContent = "";
+      throwStatusEl.textContent = "";
+
+      ringMainEl.textContent = "—";
+      ringMainEl.classList.remove("miss", "outer", "inner", "bull");
+      ringMainEl.classList.add("miss");
+      ringSubEl.textContent = "No shot recorded yet.";
+      distMainEl.textContent = "—";
+      distSubEl.textContent = "Squared distance to center in encrypted space.";
+      handlesCoordsEl.textContent = "x: —\ny: —";
+      handlesDistRingEl.textContent = "dist²: —\nring: —";
+      setBoardStateTag(false, { outer: 0, inner: 0, bull: 0 });
+
       appendLog("Disconnected");
     }
 
-    /* ---------- SUBMIT ATTEMPT ---------- */
-    submitAttemptBtn.addEventListener("click", async () => {
+    /* ---------- BOARD CONFIG (ADMIN) ---------- */
+    refreshBoardBtn.addEventListener("click", () => {
+      refreshBoardConfig();
+    });
+
+    updateBoardBtn.addEventListener("click", async () => {
       try {
-        if (!state.contract || !state.relayer || !state.signer) {
-          throw new Error("Connect wallet first");
+        if (!state.contract || !state.signer || !state.relayer || !state.account) {
+          throw new Error("Connect wallet first.");
         }
-        submitStatusEl.textContent = "";
-
-        const moduleId = state.activeModuleId;
-        const rawScore = scoreInputEl.value.trim();
-        const score = Number(rawScore);
-        if (!Number.isInteger(score) || score < 0 || score > 65535) {
-          throw new Error("Score must be an integer between 0 and 65535");
+        if (!state.owner || state.owner.toLowerCase() !== state.account.toLowerCase()) {
+          throw new Error("Only contract owner can update board config.");
         }
 
-        appendLog("Encrypting score for module", moduleId, ":", score);
-        const buf = state.relayer.createEncryptedInput(CONTRACT_ADDRESS, state.userAddress);
-        buf.add16(score);
-        const { handles, inputProof } = await buf.encrypt();
-        appendLog("Encrypted handle:", handles[0]);
+        const outer = Number(outerInputEl.value || "0");
+        const inner = Number(innerInputEl.value || "0");
+        const bull = Number(bullInputEl.value || "0");
 
-        const tx = await state.contract.submitModuleAttempt(
-          BigInt(moduleId),
-          handles[0],
-          inputProof
+        for (const [name, v] of [
+          ["Outer radius²", outer],
+          ["Inner radius²", inner],
+          ["Bull radius²", bull]
+        ]) {
+          if (!Number.isInteger(v) || v <= 0 || v > 65535) {
+            throw new Error(`${name} must be an integer between 1 and 65535.`);
+          }
+        }
+
+        if (!(bull < inner && inner < outer)) {
+          throw new Error("Expected: bullRadius² < innerRadius² < outerRadius².");
+        }
+
+        adminStatusEl.textContent = "Updating board config...";
+        const tx = await state.contract.setBoardConfig(
+          BigInt(bull),
+          BigInt(inner),
+          BigInt(outer)
         );
-        submitStatusEl.textContent = "Transaction sent: " + tx.hash.slice(0, 10) + "…";
-        appendLog("submitModuleAttempt tx:", tx.hash);
+
+        adminStatusEl.textContent = "Tx sent: " + tx.hash.slice(0, 10) + "…";
+        appendLog("setBoardConfig tx:", tx.hash);
 
         await tx.wait();
-        submitStatusEl.textContent = "Attempt submitted ✓";
-        appendLog("submitModuleAttempt confirmed");
+        adminStatusEl.textContent = "Board config updated ✓";
 
-        await reloadState();
+        await refreshBoardConfig();
       } catch (e) {
         const msg = e?.reason || e?.shortMessage || e?.message || String(e);
-        submitStatusEl.textContent = msg;
-        appendLog("submitModuleAttempt error:", msg);
+        adminStatusEl.textContent = msg;
+        appendLog("setBoardConfig error:", msg);
         alert(msg);
       }
     });
 
-    /* ---------- PRIVATE DECRYPT ---------- */
-    decryptPrivateBtn.addEventListener("click", async () => {
+    async function refreshBoardConfig() {
       try {
-        if (!state.contract || !state.relayer || !state.signer) {
-          throw new Error("Connect wallet first");
+        if (!state.contract) {
+          setBoardStateTag(false, { outer: 0, inner: 0, bull: 0 });
+          return;
         }
-        if (!IS_HTTPS) {
-          appendLog("userDecrypt requested on non-HTTPS origin.");
-        }
-
-        const moduleId = state.activeModuleId;
-        appendLog("Fetching my handles for module", moduleId);
-        const r = await state.contract.getMyModuleHandles(BigInt(moduleId));
-        const scoreH = r?.[0];
-        const passH = r?.[1];
-        const decided = !!r?.[2];
-
-        if (!decided || !scoreH || !passH) {
-          clearResultDisplay(true);
-          localUnlockNoteEl.textContent = "No attempt recorded on-chain for this module yet.";
+        const configured = await state.contract.boardConfigured();
+        if (!configured) {
+          setBoardStateTag(false, { outer: 0, inner: 0, bull: 0 });
           return;
         }
 
+        const outer = await state.contract.outerRadius2();
+        const inner = await state.contract.innerRadius2();
+        const bull = await state.contract.bullRadius2();
+
+        const outerNum = Number(outer);
+        const innerNum = Number(inner);
+        const bullNum = Number(bull);
+
+        outerInputEl.value = String(outerNum);
+        innerInputEl.value = String(innerNum);
+        bullInputEl.value = String(bullNum);
+
+        setBoardStateTag(true, { outer: outerNum, inner: innerNum, bull: bullNum });
+      } catch (e) {
+        const msg = e?.reason || e?.shortMessage || e?.message || String(e);
+        appendLog("refreshBoardConfig error:", msg);
+        setBoardStateTag(false, { outer: 0, inner: 0, bull: 0 });
+      }
+    }
+
+    /* ---------- BOARD INTERACTION ---------- */
+    dartBoardEl.addEventListener("click", (ev) => {
+      const rect = dartBoardEl.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const px = ev.clientX - cx;
+      const py = cy - ev.clientY; // invert y for math
+
+      const radiusPx = rect.width / 2;
+      const scale = 180 / radiusPx; // map to approx [-180, 180]
+
+      const xUnits = Math.round(px * scale);
+      const yUnits = Math.round(py * scale);
+
+      state.lastClick = { xUnits, yUnits };
+
+      coordDisplayEl.textContent = `(${xUnits}, ${yUnits})`;
+
+      // Move marker
+      const relX = (px / radiusPx) * 50; // %
+      const relY = (-py / radiusPx) * 50;
+      dartMarkerEl.style.left = `${50 + relX}%`;
+      dartMarkerEl.style.top = `${50 + relY}%`;
+      dartMarkerEl.classList.add("visible");
+
+      throwStatusEl.textContent = "Coordinates selected. Ready to encrypt and throw.";
+    });
+
+    /* ---------- THROW ENCRYPTED DART ---------- */
+    throwBtn.addEventListener("click", async () => {
+      try {
+        if (!state.contract || !state.relayer || !state.signer || !state.account) {
+          throw new Error("Connect wallet first.");
+        }
+        if (!state.lastClick) {
+          throw new Error("Click on the board to choose coordinates first.");
+        }
+
+        const configured = await state.contract.boardConfigured();
+        if (!configured) {
+          throw new Error("Board not configured on-chain yet.");
+        }
+
+        const { xUnits, yUnits } = state.lastClick;
+        const encX = encodeCoordForUint16(xUnits);
+        const encY = encodeCoordForUint16(yUnits);
+
+        throwStatusEl.textContent = "Encrypting (x, y)…";
+
+        const buf = state.relayer.createEncryptedInput(CONTRACT_ADDRESS, state.account);
+        buf.add16(encX);
+        buf.add16(encY);
+
+        const { handles, inputProof } = await buf.encrypt();
+        appendLog("throwDart handles:", handles);
+
+        const tx = await state.contract.throwDart(
+          handles[0],
+          handles[1],
+          inputProof
+        );
+
+        throwStatusEl.textContent = "Transaction sent: " + tx.hash.slice(0, 10) + "…";
+        appendLog("throwDart tx:", tx.hash);
+
+        await tx.wait();
+        throwStatusEl.textContent = "Encrypted dart recorded ✓";
+
+        // Clear last visible result until user decrypts again
+        ringMainEl.textContent = "—";
+        ringMainEl.classList.remove("miss", "outer", "inner", "bull");
+        ringMainEl.classList.add("miss");
+        ringSubEl.textContent = "Decrypt to see where you landed.";
+
+        distMainEl.textContent = "—";
+        distSubEl.textContent = "Squared distance to center in encrypted space.";
+
+        handlesCoordsEl.textContent = "x: —\ny: —";
+        handlesDistRingEl.textContent = "dist²: —\nring: —";
+      } catch (e) {
+        const msg = e?.reason || e?.shortMessage || e?.message || String(e);
+        throwStatusEl.textContent = msg;
+        appendLog("throwDart error:", msg);
+        alert(msg);
+      }
+    });
+
+    /* ---------- DECRYPT LAST SHOT ---------- */
+    decryptBtn.addEventListener("click", async () => {
+      try {
+        if (!state.contract || !state.relayer || !state.signer || !state.account) {
+          throw new Error("Connect wallet first.");
+        }
+        if (!IS_HTTPS) {
+          appendLog("userDecrypt on non-HTTPS origin (may be restricted).");
+        }
+
+        const r = await state.contract.getMyLastShotHandles();
+        const xH = r?.[0];
+        const yH = r?.[1];
+        const dist2H = r?.[2];
+        const ringH = r?.[3];
+        const decided = !!r?.[4];
+
+        if (!decided || !xH || !yH || !ringH) {
+          setRingUi(0);
+          distMainEl.textContent = "—";
+          distSubEl.textContent = "No shot recorded yet.";
+          handlesCoordsEl.textContent = "x: —\ny: —";
+          handlesDistRingEl.textContent = "dist²: —\nring: —";
+          return;
+        }
+
+        handlesCoordsEl.textContent = `x: ${String(xH)}\ny: ${String(yH)}`;
+        handlesDistRingEl.textContent = `dist²: ${String(dist2H)}\nring: ${String(ringH)}`;
+
         const pairs = [
-          { handle: scoreH, contractAddress: CONTRACT_ADDRESS },
-          { handle: passH, contractAddress: CONTRACT_ADDRESS }
+          { handle: xH, contractAddress: CONTRACT_ADDRESS },
+          { handle: yH, contractAddress: CONTRACT_ADDRESS },
+          { handle: dist2H, contractAddress: CONTRACT_ADDRESS },
+          { handle: ringH, contractAddress: CONTRACT_ADDRESS }
         ];
 
         const { out, pairs: used } = await userDecryptMany(state.relayer, state.signer, pairs);
         const pick = buildValuePicker(out, used);
 
-        const scoreVal = pick(scoreH);
-        const passVal = pick(passH);
-        const passed = (passVal ?? 0n) !== 0n;
+        const xVal = pick(xH);
+        const yVal = pick(yH);
+        const distVal = pick(dist2H);
+        const ringVal = pick(ringH);
 
-        resultScoreEl.textContent = scoreVal != null ? scoreVal.toString() : "n/a";
-        resultScoreEl.classList.remove("positive", "negative");
-        resultScoreEl.classList.add("positive");
+        const ringBig = ringVal != null ? ringVal : 0n;
+        const ringNum = Number(ringBig);
 
-        resultPassEl.textContent = passed ? "passed (true)" : "not passed (false)";
-        resultPassEl.classList.remove("positive", "negative");
-        resultPassEl.classList.add(passed ? "positive" : "negative");
+        setRingUi(ringNum);
 
-        resultScoreHandleEl.textContent = "Handle: " + String(scoreH);
-        resultPassHandleEl.textContent = "Handle: " + String(passH);
-
-        if (passed) {
-          state.passedModules.add(moduleId);
-          localUnlockNoteEl.textContent =
-            "This module is locally marked as completed. The next step in the path is now marked as ready.";
+        if (distVal != null) {
+          const dNum = Number(distVal);
+          distMainEl.textContent = `d² = ${dNum}`;
+          const approx = Math.sqrt(dNum);
+          const approxClean = Math.round(approx * 10) / 10;
+          distSubEl.textContent = `Approximate distance from center: ~${approxClean} units.`;
         } else {
-          localUnlockNoteEl.textContent =
-            "You can resubmit a higher score for this module at any time.";
+          distMainEl.textContent = "n/a";
+          distSubEl.textContent = "Could not decrypt squared distance.";
         }
 
-        renderModuleSidebar();
+        if (xVal != null && yVal != null) {
+          const dx = decodeCoordFromUint16(xVal);
+          const dy = decodeCoordFromUint16(yVal);
+          coordDisplayEl.textContent = `(${dx}, ${dy})`;
+        }
       } catch (e) {
         const msg = e?.reason || e?.shortMessage || e?.message || String(e);
-        appendLog("decryptPrivate error:", msg);
+        appendLog("decrypt error:", msg);
         alert(msg);
       }
     });
 
-    /* ---------- PUBLIC CERTIFICATE (enable) ---------- */
-    makePublicBtn.addEventListener("click", async () => {
-      try {
-        if (!state.contract || !state.relayer || !state.signer) {
-          throw new Error("Connect wallet first");
-        }
-        makePublicStatusEl.textContent = "";
-        const moduleId = state.activeModuleId;
+    /* ---------- INIT ---------- */
+    updateHttpsUi();
+    setBoardStateTag(false, { outer: 0, inner: 0, bull: 0 });
 
-        appendLog("Calling enablePublicCertificate for module", moduleId);
-        const tx = await state.contract.enablePublicCertificate(BigInt(moduleId));
-        makePublicStatusEl.textContent = "Transaction sent: " + tx.hash.slice(0, 10) + "…";
-        appendLog("enablePublicCertificate tx:", tx.hash);
-
-        await tx.wait();
-        makePublicStatusEl.textContent = "Certificate flag set ✓";
-        updateCertificateTag(true);
-      } catch (e) {
-        const msg = e?.reason || e?.shortMessage || e?.message || String(e);
-        makePublicStatusEl.textContent = msg;
-        appendLog("enablePublicCertificate error:", msg);
-        alert(msg);
-      }
-    });
-
-    /* ---------- PUBLIC CERTIFICATE (check) ---------- */
-    checkCertBtn.addEventListener("click", async () => {
-      try {
-        if (!state.contract || !state.relayer) {
-          throw new Error("Connect wallet first (Relayer needed for public decrypt)");
-        }
-        const learner = checkAddressInputEl.value.trim();
-        const moduleId = Number(checkModuleInputEl.value || "0");
-        if (!/^0x[a-fA-F0-9]{40}$/.test(learner)) {
-          throw new Error("Invalid learner address");
-        }
-        if (!Number.isInteger(moduleId) || moduleId <= 0) {
-          throw new Error("Module ID must be a positive integer");
-        }
-
-        certResultEl.textContent = "Checking…";
-        certHandleEl.textContent = "—";
-
-        const r = await state.contract.getModulePassHandlePublic(learner, BigInt(moduleId));
-        const passH = r?.[0];
-        const decided = !!r?.[1];
-
-        if (!decided || !passH || /^0x0{64}$/i.test(String(passH))) {
-          certResultEl.textContent = "No attempt recorded or not yet decided.";
-          certHandleEl.textContent = String(passH || "—");
-          updateCertificateTag(false);
-          return;
-        }
-
-        certHandleEl.textContent = String(passH);
-
-        const { out, pairs: used } = await publicDecryptMany(state.relayer, [
-          { handle: passH, contractAddress: CONTRACT_ADDRESS }
-        ]);
-        const pick = buildValuePicker(out, used);
-        const v = pick(passH);
-        const passed = (v ?? 0n) !== 0n;
-
-        certResultEl.textContent = passed
-          ? "Certificate: module passed (true)"
-          : "Certificate: module not passed (false)";
-        updateCertificateTag(true);
-      } catch (e) {
-        const msg = e?.reason || e?.shortMessage || e?.message || String(e);
-        certResultEl.textContent = msg;
-        appendLog("checkCert error:", msg);
-        alert(msg);
-      }
-    });
-
-    /* ---------- ADMIN: CREATE / UPDATE MODULE ---------- */
-    if (adminSetModuleBtn) {
-      adminSetModuleBtn.addEventListener("click", async () => {
-        try {
-          if (!state.contract || !state.relayer || !state.signer) {
-            throw new Error("Connect wallet first");
-          }
-          adminStatusEl.textContent = "";
-
-          const me = state.userAddress || await state.signer.getAddress();
-          if (!state.owner || state.owner.toLowerCase() !== me.toLowerCase()) {
-            throw new Error("Only contract owner can configure modules");
-          }
-
-          const moduleId = Number(adminModuleIdEl.value || "0");
-          const prereqId = Number(adminPrereqIdEl.value || "0");
-          const passingScore = Number(adminPassingScoreEl.value || "0");
-
-          if (!Number.isInteger(moduleId) || moduleId <= 0) {
-            throw new Error("Module ID must be a positive integer");
-          }
-          if (!Number.isInteger(prereqId) || prereqId < 0) {
-            throw new Error("Prerequisite ID must be >= 0");
-          }
-          if (!Number.isInteger(passingScore) || passingScore < 0 || passingScore > 65535) {
-            throw new Error("Passing score must be between 0 and 65535");
-          }
-
-          appendLog("Admin: encrypt passing score for module", moduleId, ":", passingScore);
-          adminStatusEl.textContent = "Encrypting…";
-
-          const buf = state.relayer.createEncryptedInput(CONTRACT_ADDRESS, me);
-          buf.add16(passingScore); // euint16 passing score
-          const { handles, inputProof } = await buf.encrypt();
-          appendLog("Admin: encrypted handle:", handles[0]);
-
-          // Check if module exists
-          let exists = false;
-          try {
-            const meta = await state.contract.getModuleMeta(BigInt(moduleId));
-            exists = !!meta?.[0];
-          } catch (e) {
-            appendLog("getModuleMeta failed (assuming new module):", e?.message || e);
-          }
-
-          let tx;
-          if (!exists) {
-            appendLog("Calling createModule…");
-            tx = await state.contract.createModule(
-              BigInt(moduleId),
-              BigInt(prereqId),
-              handles[0],
-              inputProof
-            );
-          } else {
-            appendLog("Calling updateModule…");
-            tx = await state.contract.updateModule(
-              BigInt(moduleId),
-              BigInt(prereqId),
-              handles[0],
-              inputProof
-            );
-          }
-
-          adminStatusEl.textContent = "Tx sent: " + tx.hash.slice(0, 10) + "…";
-          appendLog("Admin module tx:", tx.hash);
-          await tx.wait();
-
-          adminStatusEl.textContent = exists
-            ? "Module updated ✓"
-            : "Module created ✓";
-
-          await reloadState();
-          renderModuleSidebar();
-          renderModuleSelect();
-        } catch (e) {
-          const msg = e?.reason || e?.shortMessage || e?.message || String(e);
-          adminStatusEl.textContent = msg;
-          appendLog("Admin set module error:", msg);
-          alert(msg);
-        }
-      });
-    }
-
-    /* ---------- RELOAD STATE ---------- */
-    reloadBtn.addEventListener("click", () => {
-      reloadState().catch(e => {
-        const msg = e?.message || String(e);
-        appendLog("reloadState error:", msg);
-      });
-    });
-
-    async function reloadState() {
-      if (!state.contract || !state.signer) return;
-      await checkModuleMeta();
-    }
-
-    async function checkModuleMeta() {
-      try {
-        if (!state.contract) return;
-        const moduleId = state.activeModuleId;
-        try {
-          const [exists, prereq] = await state.contract.getModuleMeta(BigInt(moduleId));
-          if (!exists) {
-            moduleMetaTagEl.textContent = `module ID: ${moduleId} • not configured on-chain`;
-          } else {
-            updateModuleMetaTag(prereq);
-          }
-        } catch {
-          moduleMetaTagEl.textContent = `module ID: ${moduleId}`;
-        }
-      } catch (e) {
-        appendLog("getModuleMeta error:", e?.message || e);
-      }
-    }
-
-    /* ---------- INIT UI ---------- */
-    renderModuleSidebar();
-    renderModuleSelect();
-    updateDecryptTag();
-    updateCertificateTag(false);
-    localUnlockNoteEl.textContent = "";
-
-    moduleSelectEl.addEventListener("change", () => {
-      setActiveModule(Number(moduleSelectEl.value));
-    });
-
-    // auto-connect if already authorized
+    // Auto-connect if already authorized
     if (window.ethereum) {
       try {
         const accounts = await window.ethereum.request({ method: "eth_accounts" });

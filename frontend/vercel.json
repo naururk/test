@@ -1,0 +1,21 @@
+{
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" },
+        { "key": "Cross-Origin-Embedder-Policy", "value": "require-corp" }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/relayer/:path*",
+      "destination": "https://relayer.testnet.zama.org/:path*"
+    },
+    {
+      "source": "/gateway/:path*",
+      "destination": "https://gateway.testnet.zama.org/:path*"
+    }
+  ]
+}

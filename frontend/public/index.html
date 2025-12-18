@@ -1,164 +1,1536 @@
-// server.js
-import express from "express";
-import cors from "cors";
-import dotenv from "dotenv";
-import path from "path";
-import fs from "fs";
-import os from "os";
-import { fileURLToPath } from "url";
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Secret Salary Benchmark · Zama FHEVM</title>
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+    <!-- Required for Relayer SDK (SharedArrayBuffer) -->
+    <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin" />
+    <meta http-equiv="Cross-Origin-Embedder-Policy" content="require-corp" />
 
-// === ENV ===
-dotenv.config({ path: path.resolve(__dirname, ".env") });
-const PORT = Number(process.env.PORT || 3046);
-const HOST = process.env.HOST || "0.0.0.0";
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
 
-// Upstreams
-const RELAYER_UPSTREAM = process.env.RELAYER_UPSTREAM || "https://relayer.testnet.zama.org";
-const GATEWAY_UPSTREAM = process.env.GATEWAY_UPSTREAM || "https://gateway.testnet.zama.org";
-
-// === PATHS ===
-const publicDir = path.join(__dirname, "frontend", "public");
-const indexHtmlPath = path.join(publicDir, "index.html");
-if (!fs.existsSync(indexHtmlPath)) {
-  throw new Error(`index.html not found at ${indexHtmlPath}`);
-}
-console.log("[DEBUG] index.html found at:", indexHtmlPath);
-
-// === APP ===
-const app = express();
-
-// Важно: если вдруг у тебя стоит compression() где-то — УБЕРИ его.
-// Нам нельзя “играться” с Content-Encoding на этих роутингах.
-
-app.use(cors());
-
-// COOP/COEP нужны для Relayer SDK (SharedArrayBuffer)
-app.use((req, res, next) => {
-  res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
-  res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
-  next();
-});
-
-// Чтобы проксировать POST/PUT с телом
-app.use(express.raw({ type: "*/*", limit: "10mb" }));
-
-function getLANAddresses() {
-  const ifaces = os.networkInterfaces();
-  const addrs = [];
-  for (const name of Object.keys(ifaces)) {
-    for (const info of ifaces[name] || []) {
-      if (info.family === "IPv4" && !info.internal) {
-        addrs.push(info.address);
+    <style>
+      :root {
+        --bg: #f8fbff;
+        --bg-glow: #eff6ff;
+        --surface: #ffffff;
+        --surface-muted: #f1f5ff;
+        --text: #0f172a;
+        --text-soft: #4c5a78;
+        --accent: #2563eb;
+        --accent-strong: #1d4ed8;
+        --accent-soft: rgba(37, 99, 235, 0.1);
+        --accent-softer: rgba(37, 99, 235, 0.06);
+        --danger: #ef4444;
+        --radius-xl: 34px;
+        --radius-lg: 28px;
+        --radius-md: 18px;
+        --radius-sm: 12px;
+        --shadow-soft: 0 30px 80px rgba(15, 23, 42, 0.08);
       }
-    }
-  }
-  return addrs;
-}
 
-function buildUpstreamUrl(prefix, upstreamBase, originalUrl) {
-  // originalUrl includes prefix, e.g. /relayer/v1/keyurl -> /v1/keyurl
-  const rest = originalUrl.startsWith(prefix) ? originalUrl.slice(prefix.length) : originalUrl;
-  return upstreamBase.replace(/\/+$/, "") + rest;
-}
+      * {
+        box-sizing: border-box;
+      }
 
-function sanitizeRequestHeaders(req) {
-  // Забираем заголовки клиента, но убираем то, что ломает прокси
-  const headers = { ...req.headers };
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Space Grotesk", "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: var(--text);
+        background: radial-gradient(circle at 15% 20%, rgba(96, 165, 250, 0.35), transparent 45%),
+          radial-gradient(circle at 80% 0%, rgba(249, 168, 212, 0.35), transparent 45%),
+          linear-gradient(135deg, var(--bg-glow), var(--bg));
+        padding: 32px 18px 72px;
+      }
 
-  delete headers.host;
-  delete headers.connection;
-  delete headers["content-length"];
+      .page-shell {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
 
-  // Ключевой момент: не просим сжатие у апстрима
-  headers["accept-encoding"] = "identity";
+      .hero {
+        padding: 48px;
+        border-radius: var(--radius-xl);
+        background: linear-gradient(135deg, #ffffff, #e0f2ff);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 32px;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: var(--shadow-soft);
+      }
 
-  // Иногда полезно убрать referer/origin, но обычно не обязательно.
-  // Если будут проблемы — можно раскомментировать:
-  // delete headers.origin;
-  // delete headers.referer;
+      .hero h1 {
+        margin: 10px 0 12px;
+        font-size: clamp(2rem, 4vw, 3.2rem);
+        line-height: 1.1;
+      }
 
-  return headers;
-}
+      .hero p {
+        margin: 0;
+        color: var(--text-soft);
+        max-width: 520px;
+        font-size: 1.05rem;
+      }
 
-function sanitizeResponseHeaders(upHeaders) {
-  const headers = {};
-  for (const [k, v] of upHeaders.entries()) {
-    const key = k.toLowerCase();
+      .hero .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--accent-soft);
+        padding: 8px 14px;
+        border-radius: 999px;
+        font-size: 0.88rem;
+        color: var(--accent-strong);
+      }
 
-    // Ключевое: НЕ отдаём encoding/length/transfer — иначе будет decoding_failed
-    if (key === "content-encoding") continue;
-    if (key === "content-length") continue;
-    if (key === "transfer-encoding") continue;
+      .hero-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-end;
+      }
 
-    // set-cookie обычно не нужен и может мешать (опционально)
-    // if (key === "set-cookie") continue;
+      .contract-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--surface);
+        padding: 10px 18px;
+        border-radius: var(--radius-md);
+        font-size: 0.95rem;
+        box-shadow: var(--shadow-soft);
+      }
 
-    headers[k] = v;
-  }
-  return headers;
-}
+      .account-chip,
+      .owner-chip {
+        padding: 8px 16px;
+        border-radius: 999px;
+        background: var(--surface-muted);
+        font-size: 0.9rem;
+        color: var(--text-soft);
+      }
 
-async function proxyHandler(prefix, upstreamBase, req, res) {
-  try {
-    const upstreamUrl = buildUpstreamUrl(prefix, upstreamBase, req.originalUrl);
+      .owner-chip.active {
+        background: rgba(16, 185, 129, 0.15);
+        color: #047857;
+      }
 
-    const method = req.method.toUpperCase();
-    const headers = sanitizeRequestHeaders(req);
+      .status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        border-radius: 999px;
+        background: rgba(15, 23, 42, 0.08);
+        font-size: 0.9rem;
+      }
 
-    const hasBody = !["GET", "HEAD"].includes(method);
-    const body = hasBody ? req.body : undefined;
+      .status-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 999px;
+        background: rgba(15, 23, 42, 0.4);
+      }
 
-    const upstreamResp = await fetch(upstreamUrl, {
-      method,
-      headers,
-      body: hasBody ? body : undefined,
-      redirect: "follow",
-    });
+      .status-dot.online {
+        background: #10b981;
+        box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.2);
+      }
 
-    const outHeaders = sanitizeResponseHeaders(upstreamResp.headers);
-    res.status(upstreamResp.status);
+      .grid {
+        margin-top: 36px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 26px;
+      }
 
-    // Проставляем заголовки (после status)
-    for (const [k, v] of Object.entries(outHeaders)) {
-      res.setHeader(k, v);
-    }
+      .card {
+        background: var(--surface);
+        border-radius: var(--radius-lg);
+        padding: 28px;
+        box-shadow: var(--shadow-soft);
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
+      }
 
-    // И ещё раз: гарантированно никакого Content-Encoding наружу
-    res.removeHeader("content-encoding");
-    res.removeHeader("Content-Encoding");
+      .card header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 10px;
+      }
 
-    const buf = Buffer.from(await upstreamResp.arrayBuffer());
-    res.send(buf);
-  } catch (e) {
-    console.error("[proxy error]", prefix, e);
-    res.status(502).json({ error: "proxy_failed", message: String(e?.message || e) });
-  }
-}
+      .card header h2 {
+        margin: 0;
+        font-size: 1.4rem;
+      }
 
-// --- PROXY ROUTES (ВАЖНО: до static и до SPA fallback) ---
-// --- PROXY ROUTES (ВАЖНО: до static и до SPA fallback) ---
-app.all(/^\/relayer(\/.*)?$/, (req, res) => proxyHandler("/relayer", RELAYER_UPSTREAM, req, res));
-app.all(/^\/gateway(\/.*)?$/, (req, res) => proxyHandler("/gateway", GATEWAY_UPSTREAM, req, res));
+      .card header p {
+        margin: 6px 0 0;
+        color: var(--text-soft);
+        font-size: 0.95rem;
+      }
 
+      .fields {
+        display: grid;
+        gap: 16px;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      }
 
-// --- STATIC ---
-app.use(express.static(publicDir));
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
 
-// --- SPA FALLBACK (ПОСЛЕДНИМ!) ---
-app.use((req, res) => {
-  res.sendFile(indexHtmlPath);
-});
+      .field label {
+        font-size: 0.92rem;
+        color: var(--text-soft);
+      }
 
-// START
-app.listen(PORT, HOST, () => {
-  const lan = getLANAddresses();
-  console.log("🚀 Server is up:");
-  console.log(`   Local:   http://localhost:${PORT}/`);
-  for (const a of lan) console.log(`   LAN:     http://${a}:${PORT}/`);
-  console.log(`   Relayer: ${RELAYER_UPSTREAM}`);
-  console.log(`   Gateway: ${GATEWAY_UPSTREAM}`);
-  console.log(`   Host:    ${HOST}`);
-});
+      .field input {
+        border: none;
+        border-radius: var(--radius-md);
+        padding: 16px 18px;
+        background: var(--surface-muted);
+        font-size: 1rem;
+        font-family: inherit;
+        color: var(--text);
+        outline: 2px solid transparent;
+        transition: outline 0.15s ease;
+      }
+
+      .field input:focus {
+        outline: 2px solid rgba(37, 99, 235, 0.4);
+        background: #fff;
+      }
+
+      .btn-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+
+      button.btn {
+        border: none;
+        border-radius: var(--radius-md);
+        font-size: 1rem;
+        font-weight: 600;
+        padding: 16px 22px;
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+      }
+
+      button.btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+      }
+
+      .btn-primary {
+        background: var(--accent);
+        color: #fff;
+        box-shadow: 0 20px 45px rgba(37, 99, 235, 0.35);
+      }
+
+      .btn-ghost {
+        background: var(--surface-muted);
+        color: var(--text);
+      }
+
+      .btn-outline {
+        background: transparent;
+        color: var(--accent-strong);
+        border: 1px solid var(--accent-soft);
+      }
+
+      .handle-stack,
+      .values-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+      }
+
+      .handle-chip {
+        background: var(--accent-softer);
+        border-radius: var(--radius-sm);
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .handle-chip span.label,
+      .value-box span.label {
+        font-size: 0.78rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text-soft);
+      }
+
+      .handle-chip span.value,
+      .value-box span.value {
+        font-size: 0.95rem;
+        font-family: "Space Grotesk", monospace;
+        word-break: break-all;
+      }
+
+      .value-box {
+        border-radius: var(--radius-md);
+        background: var(--surface-muted);
+        padding: 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .value-box .big {
+        font-size: 1.7rem;
+        font-weight: 600;
+      }
+
+      .subtle-text {
+        font-size: 0.9rem;
+        color: var(--text-soft);
+      }
+
+      .decided-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px;
+        border-radius: 999px;
+        font-size: 0.85rem;
+        background: rgba(15, 23, 42, 0.08);
+      }
+
+      .decided-chip.live {
+        background: rgba(16, 185, 129, 0.15);
+        color: #047857;
+      }
+
+      .log-card ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        font-size: 0.92rem;
+        color: var(--text-soft);
+      }
+
+      .log-card li {
+        padding: 10px 12px;
+        border-radius: var(--radius-sm);
+        background: var(--surface-muted);
+      }
+
+      .admin-card.disabled {
+        opacity: 0.6;
+      }
+
+      .admin-note {
+        font-size: 0.9rem;
+        color: var(--text-soft);
+      }
+
+      @media (max-width: 700px) {
+        .hero {
+          padding: 32px;
+        }
+        .hero-actions {
+          width: 100%;
+          align-items: flex-start;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <div>
+          <span class="badge">Zama · Secret Salary Benchmark</span>
+          <h1>Encrypt salaries. Reveal only the verdict.</h1>
+          <p>
+            Fully homomorphic experience: push salary + experience ciphertexts on-chain, let the contract compare with hidden
+            market data, and only decrypt the label.
+          </p>
+        </div>
+        <div class="hero-actions">
+          <span class="contract-chip">Contract · <span id="contractChip">0x000…</span></span>
+          <span class="status-pill">
+            <span class="status-dot" id="statusDot"></span>
+            <span id="statusText">Wallet disconnected</span>
+          </span>
+          <button class="btn btn-primary" id="connectBtn">Connect wallet</button>
+          <button class="btn btn-ghost" id="disconnectBtn" style="display: none;">Disconnect</button>
+          <span class="account-chip" id="accountChip">—</span>
+          <span class="owner-chip" id="ownerChip">User mode</span>
+        </div>
+      </header>
+
+      <main class="grid">
+        <section class="card" id="encryptCard">
+          <header>
+            <div>
+              <h2>Private submission</h2>
+              <p>Encrypt locally, send once, keep your numbers hidden.</p>
+            </div>
+            <button class="btn btn-outline" id="randomBtn" type="button">Quick fill</button>
+          </header>
+
+          <form id="benchmarkForm" class="fields" autocomplete="off">
+            <div class="field">
+              <label for="profileInput">Profile ID</label>
+              <input type="number" id="profileInput" min="1" value="1" required />
+            </div>
+            <div class="field">
+              <label for="salaryInput">Salary (USD)</label>
+              <input type="number" id="salaryInput" placeholder="95000" min="1" required />
+            </div>
+            <div class="field">
+              <label for="experienceInput">Experience (years)</label>
+              <input type="number" id="experienceInput" placeholder="5" min="0" max="80" required />
+            </div>
+          </form>
+
+          <div class="btn-row">
+            <button class="btn btn-primary" id="submitBtn">Encrypt &amp; send</button>
+          </div>
+
+          <div>
+            <p class="subtle-text">Encrypted handles stored for you:</p>
+            <div class="handle-stack">
+              <div class="handle-chip">
+                <span class="label">Salary handle</span>
+                <span class="value" id="handleSalary">—</span>
+              </div>
+              <div class="handle-chip">
+                <span class="label">Experience handle</span>
+                <span class="value" id="handleExperience">—</span>
+              </div>
+              <div class="handle-chip">
+                <span class="label">Band handle</span>
+                <span class="value" id="handleBand">—</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <header>
+            <div>
+              <h2>Decrypt verdict</h2>
+              <p>Only you can see the numbers behind the FHE handles.</p>
+            </div>
+            <span class="decided-chip" id="decidedChip">Awaiting submission</span>
+          </header>
+
+          <div class="fields">
+            <div class="field">
+              <label for="decryptProfileInput">Profile ID</label>
+              <input type="number" id="decryptProfileInput" min="1" value="1" required />
+            </div>
+          </div>
+
+          <div class="btn-row">
+            <button class="btn btn-ghost" id="decryptBtn">Refresh &amp; decrypt</button>
+            <button class="btn btn-ghost" id="publishBtn">Make verdict public</button>
+          </div>
+
+          <div class="values-grid">
+            <div class="value-box">
+              <span class="label">Salary</span>
+              <span class="value" id="valueSalary">—</span>
+            </div>
+            <div class="value-box">
+              <span class="label">Experience</span>
+              <span class="value" id="valueExperience">—</span>
+            </div>
+            <div class="value-box">
+              <span class="label">Verdict</span>
+              <span class="value big" id="valueBand">—</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="card admin-card" id="adminCard">
+          <header>
+            <div>
+              <h2>Owner controls</h2>
+              <p>Configure hidden benchmark thresholds (owner only).</p>
+            </div>
+            <span class="decided-chip" id="adminStatus">Owner locked</span>
+          </header>
+
+          <p class="admin-note" id="adminNote">Connect with the owner wallet to unlock editing.</p>
+
+          <form class="fields" id="adminForm" autocomplete="off">
+            <div class="field">
+              <label for="adminProfileInput">Profile ID</label>
+              <input type="number" id="adminProfileInput" min="1" value="1" required />
+            </div>
+            <div class="field">
+              <label for="adminLabelInput">Label</label>
+              <input type="text" id="adminLabelInput" placeholder="Backend · EU · L2" required />
+            </div>
+            <div class="field">
+              <label for="adminMinExp">Min experience (yrs)</label>
+              <input type="number" id="adminMinExp" min="0" value="0" />
+            </div>
+            <div class="field">
+              <label for="adminMaxExp">Max experience (yrs)</label>
+              <input type="number" id="adminMaxExp" min="0" value="40" />
+            </div>
+            <div class="field">
+              <label for="adminSalaryP25">Salary P25 (USD)</label>
+              <input type="number" id="adminSalaryP25" min="0" placeholder="80000" />
+            </div>
+            <div class="field">
+              <label for="adminSalaryP50">Salary P50 (USD)</label>
+              <input type="number" id="adminSalaryP50" min="0" placeholder="95000" />
+            </div>
+            <div class="field">
+              <label for="adminSalaryP75">Salary P75 (USD)</label>
+              <input type="number" id="adminSalaryP75" min="0" placeholder="120000" />
+            </div>
+          </form>
+
+          <div class="btn-row">
+            <button class="btn btn-outline" type="button" id="adminEncryptBtn">Encrypt policy</button>
+            <button class="btn btn-primary" type="button" id="adminPushBtn" disabled>Push benchmark</button>
+            <button class="btn btn-ghost" type="button" id="adminRemoveBtn">Remove profile</button>
+          </div>
+
+          <div>
+            <p class="subtle-text">Encrypted handles preview:</p>
+            <div class="handle-stack">
+              <div class="handle-chip">
+                <span class="label">Min exp</span>
+                <span class="value" id="adminHandleMin">—</span>
+              </div>
+              <div class="handle-chip">
+                <span class="label">Max exp</span>
+                <span class="value" id="adminHandleMax">—</span>
+              </div>
+              <div class="handle-chip">
+                <span class="label">P25</span>
+                <span class="value" id="adminHandleP25">—</span>
+              </div>
+              <div class="handle-chip">
+                <span class="label">P50</span>
+                <span class="value" id="adminHandleP50">—</span>
+              </div>
+              <div class="handle-chip">
+                <span class="label">P75</span>
+                <span class="value" id="adminHandleP75">—</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card log-card">
+          <header>
+            <div>
+              <h2>Session log</h2>
+              <p>Latest steps &amp; relayer messages.</p>
+            </div>
+          </header>
+          <ul id="logList">
+            <li>Waiting for wallet…</li>
+          </ul>
+        </section>
+      </main>
+    </div>
+
+    <script type="module">
+      import { BrowserProvider, Contract } from "https://cdn.jsdelivr.net/npm/ethers@6.15.0/+esm";
+
+      // ✅ Variant A: use Zama official CDN (fixes wasm path issues seen with jsDelivr bundle)
+      import {
+        initSDK,
+        createInstance,
+        SepoliaConfig,
+        generateKeypair
+      } from "https://cdn.zama.org/relayer-sdk-js/0.3.0-6/relayer-sdk-js.js";
+
+      // Must run before createInstance in browser setups
+      await initSDK();
+
+      const CONTRACT_ADDRESS = "0x1dfd95CD0A1b8c90255efE68762b539E5ae3D5Ec";
+      const CONTRACT_ABI = [
+        { "inputs": [], "stateMutability": "nonpayable", "type": "constructor" },
+        { "inputs": [], "name": "ZamaProtocolUnsupported", "type": "error" },
+        {
+          "anonymous": false,
+          "inputs": [
+            { "indexed": true, "internalType": "address", "name": "account", "type": "address" },
+            { "indexed": true, "internalType": "uint256", "name": "profileId", "type": "uint256" },
+            { "indexed": false, "internalType": "bytes32", "name": "bandHandle", "type": "bytes32" }
+          ],
+          "name": "BandMadePublic",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            { "indexed": true, "internalType": "uint256", "name": "profileId", "type": "uint256" },
+            { "indexed": false, "internalType": "string", "name": "label", "type": "string" }
+          ],
+          "name": "BenchmarkProfileConfigured",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            { "indexed": true, "internalType": "uint256", "name": "profileId", "type": "uint256" }
+          ],
+          "name": "BenchmarkProfileRemoved",
+          "type": "event"
+        },
+        {
+          "anonymous": false,
+          "inputs": [
+            { "indexed": true, "internalType": "address", "name": "account", "type": "address" },
+            { "indexed": true, "internalType": "uint256", "name": "profileId", "type": "uint256" },
+            { "indexed": false, "internalType": "bytes32", "name": "salaryHandle", "type": "bytes32" },
+            { "indexed": false, "internalType": "bytes32", "name": "experienceHandle", "type": "bytes32" },
+            { "indexed": false, "internalType": "bytes32", "name": "bandHandle", "type": "bytes32" }
+          ],
+          "name": "CompensationBenchmarked",
+          "type": "event"
+        },
+        {
+          "inputs": [],
+          "name": "confidentialProtocolId",
+          "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            { "internalType": "uint256", "name": "profileId", "type": "uint256" },
+            { "internalType": "externalEuint32", "name": "encSalary", "type": "bytes32" },
+            { "internalType": "externalEuint16", "name": "encExperience", "type": "bytes32" },
+            { "internalType": "bytes", "name": "proof", "type": "bytes" }
+          ],
+          "name": "evaluateCompensation",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [{ "internalType": "uint256", "name": "profileId", "type": "uint256" }],
+          "name": "getMyBenchmarkHandles",
+          "outputs": [
+            { "internalType": "bytes32", "name": "salaryHandle", "type": "bytes32" },
+            { "internalType": "bytes32", "name": "experienceHandle", "type": "bytes32" },
+            { "internalType": "bytes32", "name": "bandHandle", "type": "bytes32" },
+            { "internalType": "bool", "name": "decided", "type": "bool" }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [{ "internalType": "uint256", "name": "profileId", "type": "uint256" }],
+          "name": "getProfileMeta",
+          "outputs": [
+            { "internalType": "bool", "name": "exists", "type": "bool" },
+            { "internalType": "string", "name": "label", "type": "string" }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [{ "internalType": "uint256", "name": "profileId", "type": "uint256" }],
+          "name": "getProfilePolicyHandles",
+          "outputs": [
+            { "internalType": "bytes32", "name": "minExperienceHandle", "type": "bytes32" },
+            { "internalType": "bytes32", "name": "maxExperienceHandle", "type": "bytes32" },
+            { "internalType": "bytes32", "name": "salaryP25Handle", "type": "bytes32" },
+            { "internalType": "bytes32", "name": "salaryP50Handle", "type": "bytes32" },
+            { "internalType": "bytes32", "name": "salaryP75Handle", "type": "bytes32" }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            { "internalType": "address", "name": "account", "type": "address" },
+            { "internalType": "uint256", "name": "profileId", "type": "uint256" }
+          ],
+          "name": "getUserBandHandle",
+          "outputs": [
+            { "internalType": "bytes32", "name": "bandHandle", "type": "bytes32" },
+            { "internalType": "bool", "name": "decided", "type": "bool" }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "owner",
+          "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+          "stateMutability": "view",
+          "type": "function"
+        },
+        {
+          "inputs": [{ "internalType": "uint256", "name": "profileId", "type": "uint256" }],
+          "name": "publishMyBand",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [
+            { "internalType": "uint256", "name": "profileId", "type": "uint256" },
+            { "internalType": "string", "name": "label", "type": "string" },
+            { "internalType": "externalEuint16", "name": "encMinExperience", "type": "bytes32" },
+            { "internalType": "externalEuint16", "name": "encMaxExperience", "type": "bytes32" },
+            { "internalType": "externalEuint32", "name": "encSalaryP25", "type": "bytes32" },
+            { "internalType": "externalEuint32", "name": "encSalaryP50", "type": "bytes32" },
+            { "internalType": "externalEuint32", "name": "encSalaryP75", "type": "bytes32" },
+            { "internalType": "bytes", "name": "proof", "type": "bytes" }
+          ],
+          "name": "setBenchmarkProfile",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [{ "internalType": "address", "name": "newOwner", "type": "address" }],
+          "name": "transferOwnership",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        },
+        {
+          "inputs": [],
+          "name": "version",
+          "outputs": [{ "internalType": "string", "name": "", "type": "string" }],
+          "stateMutability": "pure",
+          "type": "function"
+        }
+      ];
+
+      const BAND_LABELS = ["Below market", "Around market", "Above market"];
+      const ZERO_HANDLE = "0x0000000000000000000000000000000000000000000000000000000000000000";
+
+      const ui = {
+        contractChip: document.getElementById("contractChip"),
+        statusDot: document.getElementById("statusDot"),
+        statusText: document.getElementById("statusText"),
+        connectBtn: document.getElementById("connectBtn"),
+        disconnectBtn: document.getElementById("disconnectBtn"),
+        accountChip: document.getElementById("accountChip"),
+        ownerChip: document.getElementById("ownerChip"),
+        randomBtn: document.getElementById("randomBtn"),
+        submitBtn: document.getElementById("submitBtn"),
+        profileInput: document.getElementById("profileInput"),
+        salaryInput: document.getElementById("salaryInput"),
+        experienceInput: document.getElementById("experienceInput"),
+        handleSalary: document.getElementById("handleSalary"),
+        handleExperience: document.getElementById("handleExperience"),
+        handleBand: document.getElementById("handleBand"),
+        decryptProfileInput: document.getElementById("decryptProfileInput"),
+        decryptBtn: document.getElementById("decryptBtn"),
+        publishBtn: document.getElementById("publishBtn"),
+        valueSalary: document.getElementById("valueSalary"),
+        valueExperience: document.getElementById("valueExperience"),
+        valueBand: document.getElementById("valueBand"),
+        decidedChip: document.getElementById("decidedChip"),
+        logList: document.getElementById("logList"),
+        adminCard: document.getElementById("adminCard"),
+        adminStatus: document.getElementById("adminStatus"),
+        adminNote: document.getElementById("adminNote"),
+        adminProfileInput: document.getElementById("adminProfileInput"),
+        adminLabelInput: document.getElementById("adminLabelInput"),
+        adminMinExp: document.getElementById("adminMinExp"),
+        adminMaxExp: document.getElementById("adminMaxExp"),
+        adminSalaryP25: document.getElementById("adminSalaryP25"),
+        adminSalaryP50: document.getElementById("adminSalaryP50"),
+        adminSalaryP75: document.getElementById("adminSalaryP75"),
+        adminEncryptBtn: document.getElementById("adminEncryptBtn"),
+        adminPushBtn: document.getElementById("adminPushBtn"),
+        adminRemoveBtn: document.getElementById("adminRemoveBtn"),
+        adminHandleMin: document.getElementById("adminHandleMin"),
+        adminHandleMax: document.getElementById("adminHandleMax"),
+        adminHandleP25: document.getElementById("adminHandleP25"),
+        adminHandleP50: document.getElementById("adminHandleP50"),
+        adminHandleP75: document.getElementById("adminHandleP75")
+      };
+
+      ui.contractChip.textContent = `${CONTRACT_ADDRESS.slice(0, 6)}…${CONTRACT_ADDRESS.slice(-4)}`;
+
+      const logEntries = [];
+      let decryptLinked = true;
+      let watchersBound = false;
+      let currentHandles = { salary: null, experience: null, band: null };
+      let adminDraft = null;
+
+      const safeStringify = (obj) =>
+        JSON.stringify(obj, (k, v) => (typeof v === "bigint" ? v.toString() + "n" : v), 2);
+
+      function appendLog(...parts) {
+        const rendered = parts
+          .map((x) =>
+            typeof x === "string"
+              ? x
+              : (() => {
+                  try {
+                    return safeStringify(x);
+                  } catch {
+                    return String(x);
+                  }
+                })()
+          )
+          .join(" ");
+        console.log("[log]", ...parts);
+        const entry = `${new Date().toLocaleTimeString()} · ${rendered}`;
+        logEntries.unshift(entry);
+        if (logEntries.length > 6) logEntries.pop();
+        ui.logList.innerHTML = logEntries.map((line) => `<li>${line}</li>`).join("") || "<li>Ready.</li>";
+      }
+
+      function normalizeDecryptedValue(v) {
+        if (v == null) return null;
+        if (typeof v === "boolean") return v ? 1n : 0n;
+        if (typeof v === "bigint" || typeof v === "number") return BigInt(v);
+        if (typeof v === "string") return BigInt(v);
+        return BigInt(v.toString());
+      }
+
+      function shortAddress(addr) {
+        if (!addr) return "—";
+        return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
+      }
+
+      function formatHandle(handle) {
+        if (!handle || handle === ZERO_HANDLE) return "—";
+        return `${handle.slice(0, 10)}…${handle.slice(-6)}`;
+      }
+
+      function formatNumber(bi) {
+        if (bi == null) return "—";
+        const s = bi.toString();
+        return s.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+      }
+
+      function formatBand(value) {
+        if (value == null) return "—";
+        const idx = Number(value);
+        return BAND_LABELS[idx] || `Unknown (#${idx})`;
+      }
+
+      function setStatus(text, online = false) {
+        ui.statusText.textContent = text;
+        ui.statusDot.classList.toggle("online", online);
+      }
+
+      function setHandlesDisplay({ salary, experience, band }) {
+        ui.handleSalary.textContent = formatHandle(salary);
+        ui.handleExperience.textContent = formatHandle(experience);
+        ui.handleBand.textContent = formatHandle(band);
+      }
+
+      function setDecryptValues({ salary, experience, band }) {
+        ui.valueSalary.textContent = salary != null ? `$${formatNumber(salary)}` : "—";
+        ui.valueExperience.textContent = experience != null ? `${experience} yrs` : "—";
+        ui.valueBand.textContent = band != null ? formatBand(band) : "—";
+      }
+
+      function setDecided(decided) {
+        ui.decidedChip.textContent = decided ? "Encrypted verdict ready" : "Awaiting submission";
+        ui.decidedChip.classList.toggle("live", decided);
+        ui.publishBtn.disabled = !decided;
+      }
+
+      function resetOutputs() {
+        setHandlesDisplay({ salary: null, experience: null, band: null });
+        setDecryptValues({ salary: null, experience: null, band: null });
+        setDecided(false);
+      }
+
+      function displayAdminHandles(handles = {}) {
+        ui.adminHandleMin.textContent = formatHandle(handles.min);
+        ui.adminHandleMax.textContent = formatHandle(handles.max);
+        ui.adminHandleP25.textContent = formatHandle(handles.p25);
+        ui.adminHandleP50.textContent = formatHandle(handles.p50);
+        ui.adminHandleP75.textContent = formatHandle(handles.p75);
+      }
+
+      function clearAdminDraft() {
+        adminDraft = null;
+        displayAdminHandles();
+        if (ui.adminStatus) ui.adminStatus.textContent = isOwner() ? "Awaiting encryption" : "Owner locked";
+        updateAdminAccess();
+      }
+
+      function parseProfileValue(input) {
+        const value = BigInt(input.value || "0");
+        if (value <= 0n) throw new Error("Profile ID must be positive");
+        return value;
+      }
+
+      function parsePositiveNumber(input) {
+        const value = Number(input.value || "0");
+        if (!Number.isFinite(value) || value <= 0) throw new Error("Enter a valid positive number");
+        return Math.round(value);
+      }
+
+      function parseNonNegativeNumber(input) {
+        const value = Number(input.value || "0");
+        if (!Number.isFinite(value) || value < 0) throw new Error("Enter a valid non-negative number");
+        return Math.round(value);
+      }
+
+      function requireConnection() {
+        if (!_state.contract) throw new Error("Connect wallet first");
+      }
+
+      function requireOwner() {
+        if (!isOwner()) throw new Error("Owner privileges required");
+      }
+
+      function randomSeed(modulus = 10000) {
+        const buf = new Uint32Array(1);
+        crypto.getRandomValues(buf);
+        const raw = BigInt(buf[0]);
+        const mod = BigInt(modulus);
+        const res = mod === 0n ? raw : raw % mod;
+        return Number(res);
+      }
+
+      function fillRandomForm() {
+        const salary = 60000 + randomSeed(90000);
+        const exp = Math.max(1, randomSeed(18));
+        ui.salaryInput.value = salary.toString();
+        ui.experienceInput.value = exp.toString();
+        appendLog("Randomized inputs", { salary, exp });
+      }
+
+      // --- core config/state ---
+      const _defaultChainIdHex = "0xaa36a7"; // Sepolia
+      const _config = {
+        contractAddress: null,
+        abi: null,
+        chainIdHex: _defaultChainIdHex,
+        relayerUrl: null,
+        gatewayUrl: null,
+        relayerNetworkConfig: SepoliaConfig
+      };
+
+      const _state = {
+        provider: null,
+        signer: null,
+        contract: null,
+        relayer: null,
+        account: null,
+        owner: null
+      };
+
+      function _normalizeChainId(id) {
+        if (!id) return "";
+        const s = String(id);
+        if (/^0x/i.test(s)) return s.toLowerCase();
+        return "0x" + BigInt(s).toString(16);
+      }
+
+      async function _ensureNetwork(chainIdHex) {
+        if (!window.ethereum?.request) return false;
+        const current = _normalizeChainId(await window.ethereum.request({ method: "eth_chainId" }));
+        if (current === chainIdHex) return true;
+
+        try {
+          await window.ethereum.request({
+            method: "wallet_switchEthereumChain",
+            params: [{ chainId: chainIdHex }]
+          });
+        } catch (err) {
+          if (err?.code === 4902) {
+            await window.ethereum.request({
+              method: "wallet_addEthereumChain",
+              params: [
+                {
+                  chainId: chainIdHex,
+                  chainName: "Sepolia",
+                  nativeCurrency: { name: "Sepolia ETH", symbol: "SEP", decimals: 18 },
+                  rpcUrls: ["https://rpc.sepolia.org"],
+                  blockExplorerUrls: ["https://sepolia.etherscan.io"]
+                }
+              ]
+            });
+            await window.ethereum.request({
+              method: "wallet_switchEthereumChain",
+              params: [{ chainId: chainIdHex }]
+            });
+          } else {
+            throw err;
+          }
+        }
+        return true;
+      }
+
+      async function configure({
+        contractAddress,
+        abi,
+        chainIdHex = _defaultChainIdHex,
+        relayerNetworkConfig = SepoliaConfig
+      } = {}) {
+        if (!contractAddress || !abi) throw new Error("configure(): contractAddress and abi are required");
+
+        _config.contractAddress = contractAddress;
+        _config.abi = abi;
+        _config.chainIdHex = chainIdHex;
+        _config.relayerNetworkConfig = relayerNetworkConfig;
+
+        // ✅ Always use same-origin proxy (your server.js provides /relayer and /gateway)
+        const origin = window.location.origin;
+        _config.relayerUrl = `${origin}/relayer`;
+        _config.gatewayUrl = `${origin}/gateway`;
+
+        appendLog("Configured core", {
+          contractAddress: _config.contractAddress,
+          relayerUrl: _config.relayerUrl,
+          gatewayUrl: _config.gatewayUrl
+        });
+      }
+
+      function isOwner() {
+        if (!_state.account || !_state.owner) return false;
+        return _state.account.toLowerCase() === _state.owner.toLowerCase();
+      }
+
+      function updateOwnerChip() {
+        const ownerMode = isOwner();
+        ui.ownerChip.textContent = ownerMode ? "Owner mode" : "User mode";
+        ui.ownerChip.classList.toggle("active", ownerMode);
+      }
+
+      function updateAdminAccess() {
+        const connected = Boolean(_state.account);
+        const ownerMode = isOwner();
+        const disabled = !connected || !ownerMode;
+
+        [
+          ui.adminProfileInput,
+          ui.adminLabelInput,
+          ui.adminMinExp,
+          ui.adminMaxExp,
+          ui.adminSalaryP25,
+          ui.adminSalaryP50,
+          ui.adminSalaryP75
+        ].forEach((el) => {
+          if (el) el.disabled = disabled;
+        });
+
+        if (ui.adminCard) ui.adminCard.classList.toggle("disabled", disabled);
+
+        ui.adminNote.textContent = ownerMode
+          ? "Encrypt values locally before pushing on-chain."
+          : "Connect with the owner wallet to unlock editing.";
+
+        if (!ownerMode) ui.adminStatus.textContent = "Owner locked";
+        else if (adminDraft) ui.adminStatus.textContent = "Ready to push";
+        else ui.adminStatus.textContent = "Awaiting encryption";
+
+        ui.adminEncryptBtn.disabled = disabled;
+        ui.adminPushBtn.disabled = disabled || !adminDraft;
+        ui.adminRemoveBtn.disabled = disabled;
+      }
+
+      function updateConnectionUI() {
+        const connected = Boolean(_state.account);
+        ui.connectBtn.textContent = connected ? shortAddress(_state.account) : "Connect wallet";
+        ui.disconnectBtn.style.display = connected ? "inline-flex" : "none";
+        ui.accountChip.textContent = connected ? `Connected · ${shortAddress(_state.account)}` : "Wallet disconnected";
+        ui.publishBtn.disabled = !connected;
+        ui.decryptBtn.disabled = !connected;
+        ui.submitBtn.disabled = !connected;
+        ui.randomBtn.disabled = !connected;
+        setStatus(connected ? "Ready on Sepolia" : "Wallet disconnected", connected);
+        updateOwnerChip();
+        updateAdminAccess();
+      }
+
+      async function connectWallet() {
+        if (!_config.contractAddress || !_config.abi) throw new Error("Call configure() first");
+        if (!window.ethereum?.request) throw new Error("No EIP-1193 provider found");
+
+        await _ensureNetwork(_config.chainIdHex);
+
+        const provider = new BrowserProvider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+        const signer = await provider.getSigner();
+        const account = await signer.getAddress();
+        const contract = new Contract(_config.contractAddress, _config.abi, signer);
+
+        // ✅ same-origin proxy avoids CORS
+        const relayer = await createInstance({
+          ..._config.relayerNetworkConfig,
+          relayerUrl: _config.relayerUrl,
+          gatewayUrl: _config.gatewayUrl,
+          network: window.ethereum,
+          debug: true
+        });
+
+        _state.provider = provider;
+        _state.signer = signer;
+        _state.contract = contract;
+        _state.relayer = relayer;
+        _state.account = account;
+
+        try {
+          _state.owner = await contract.owner();
+        } catch {
+          _state.owner = null;
+        }
+
+        appendLog("Relayer ready", { account: shortAddress(account) });
+        return { ..._state };
+      }
+
+      async function disconnectWallet() {
+        _state.provider = null;
+        _state.signer = null;
+        _state.contract = null;
+        _state.relayer = null;
+        _state.account = null;
+        _state.owner = null;
+        appendLog("Disconnected");
+      }
+
+      async function autoConnectIfAuthorized() {
+        if (!window.ethereum?.request) return false;
+        try {
+          const accounts = await window.ethereum.request({ method: "eth_accounts" });
+          if (accounts && accounts.length) {
+            appendLog("Wallet authorized, auto connecting…");
+            await connectWallet();
+            if (!watchersBound) {
+              window.ethereum.on?.("accountsChanged", () => window.location.reload());
+              window.ethereum.on?.("chainChanged", () => window.location.reload());
+              watchersBound = true;
+            }
+            return true;
+          }
+        } catch (err) {
+          appendLog("autoConnect error", err?.message || err);
+        }
+        return false;
+      }
+
+      // --- encryption helpers ---
+      async function encryptUint16(value) {
+        if (!_state.relayer || !_state.account || !_config.contractAddress) throw new Error("Relayer/account missing");
+        const n = Number(value);
+        if (!Number.isInteger(n) || n < 0 || n > 65535) throw new Error("encryptUint16: value out of range");
+        const buf = _state.relayer.createEncryptedInput(_config.contractAddress, _state.account);
+        buf.add16(n);
+        const { handles, inputProof } = await buf.encrypt();
+        return { handle: handles[0], handles, proof: inputProof };
+      }
+
+      async function encryptUint32(value) {
+        if (!_state.relayer || !_state.account || !_config.contractAddress) throw new Error("Relayer/account missing");
+        const n = Number(value);
+        if (!Number.isInteger(n) || n < 0 || n > 0xffffffff) throw new Error("encryptUint32: value out of range");
+        const buf = _state.relayer.createEncryptedInput(_config.contractAddress, _state.account);
+        buf.add32(n);
+        const { handles, inputProof } = await buf.encrypt();
+        return { handle: handles[0], handles, proof: inputProof };
+      }
+
+      function _buildValuePicker(out, pairs) {
+        const map = {};
+        if (out && typeof out === "object") {
+          if (Array.isArray(out.clearValues) && pairs && pairs.length) {
+            pairs.forEach((p, i) => {
+              const h = String(p.handle || p).toLowerCase();
+              map[h] = out.clearValues[i];
+            });
+          }
+          if (!Object.keys(map).length && typeof out.abiEncodedClearValues === "string" && pairs?.length) {
+            const raw = out.abiEncodedClearValues.startsWith("0x")
+              ? out.abiEncodedClearValues.slice(2)
+              : out.abiEncodedClearValues;
+            const values = [];
+            for (let i = 0; i + 64 <= raw.length; i += 64) {
+              const chunk = "0x" + raw.slice(i, i + 64);
+              try {
+                values.push(BigInt(chunk));
+              } catch {
+                values.push(0n);
+              }
+            }
+            pairs.forEach((p, i) => {
+              const h = String(p.handle || p).toLowerCase();
+              if (values[i] !== undefined) map[h] = values[i];
+            });
+          }
+          if (!Object.keys(map).length) {
+            Object.entries(out).forEach(([k, v]) => {
+              map[k.toLowerCase()] = v;
+            });
+          }
+        }
+        return (handle) => {
+          if (!handle) return null;
+          const k = String(handle).toLowerCase();
+          if (!(k in map)) return null;
+          return normalizeDecryptedValue(map[k]);
+        };
+      }
+
+      async function _userDecryptMany(pairs) {
+        if (!_state.relayer || !_state.signer || !_config.contractAddress) {
+          throw new Error("Relayer, signer or contract address not ready");
+        }
+        const kp = await generateKeypair();
+        const startTs = Math.floor(Date.now() / 1000).toString();
+        const daysValid = "7";
+
+        const eip = _state.relayer.createEIP712(kp.publicKey, [_config.contractAddress], startTs, daysValid);
+        const sig = await _state.signer.signTypedData(
+          eip.domain,
+          { UserDecryptRequestVerification: eip.types.UserDecryptRequestVerification },
+          eip.message
+        );
+
+        const userAddr = await _state.signer.getAddress();
+        const out = await _state.relayer.userDecrypt(
+          pairs,
+          kp.privateKey,
+          kp.publicKey,
+          sig.replace(/^0x/, ""),
+          [_config.contractAddress],
+          userAddr,
+          startTs,
+          daysValid
+        );
+        appendLog("userDecrypt result", out);
+        return { out, pairs };
+      }
+
+      async function userDecryptHandles(handles) {
+        if (!Array.isArray(handles) || !handles.length) throw new Error("userDecryptHandles: handles[] required");
+
+        const normalizedPairs = handles.map((h) =>
+          typeof h === "string"
+            ? { handle: h, contractAddress: _config.contractAddress }
+            : { handle: h.handle, contractAddress: h.contractAddress || _config.contractAddress }
+        );
+
+        const { out, pairs } = await _userDecryptMany(normalizedPairs);
+        const pick = _buildValuePicker(out, pairs);
+        return { pick, raw: out, pairs };
+      }
+
+      // --- UI actions ---
+      async function refreshHandles(profileId) {
+        const result = await _state.contract.getMyBenchmarkHandles(profileId);
+        const salaryHandle = result.salaryHandle ?? result[0];
+        const experienceHandle = result.experienceHandle ?? result[1];
+        const bandHandle = result.bandHandle ?? result[2];
+        const decided = result.decided ?? result[3];
+
+        currentHandles = { salary: salaryHandle, experience: experienceHandle, band: bandHandle };
+        setHandlesDisplay(currentHandles);
+        setDecided(decided);
+        return { salaryHandle, experienceHandle, bandHandle, decided };
+      }
+
+      async function encryptAndSubmit() {
+        requireConnection();
+        const profileId = parseProfileValue(ui.profileInput);
+        const salary = parsePositiveNumber(ui.salaryInput);
+        const experience = parsePositiveNumber(ui.experienceInput);
+
+        const builder = _state.relayer.createEncryptedInput(_config.contractAddress, _state.account);
+        builder.add32(salary);
+        builder.add16(experience);
+
+        const { handles, inputProof } = await builder.encrypt();
+        const tx = await _state.contract.evaluateCompensation(profileId, handles[0], handles[1], inputProof);
+
+        appendLog("Submitted tx", tx.hash);
+        await tx.wait();
+        appendLog("Tx confirmed", tx.hash);
+
+        ui.decryptProfileInput.value = profileId.toString();
+        decryptLinked = true;
+        await refreshHandles(profileId);
+      }
+
+      async function decryptLatest() {
+        requireConnection();
+        const profileId = parseProfileValue(ui.decryptProfileInput);
+        const data = await refreshHandles(profileId);
+
+        if (
+          (!data.salaryHandle || data.salaryHandle === ZERO_HANDLE) &&
+          (!data.experienceHandle || data.experienceHandle === ZERO_HANDLE)
+        ) {
+          appendLog("Nothing to decrypt yet for profile", profileId.toString());
+          setDecryptValues({ salary: null, experience: null, band: null });
+          return;
+        }
+
+        const list = [data.salaryHandle, data.experienceHandle, data.bandHandle]
+          .filter((h) => h && h !== ZERO_HANDLE)
+          .map((handle) => ({ handle, contractAddress: _config.contractAddress }));
+
+        if (!list.length) {
+          appendLog("No decryptable handles found");
+          return;
+        }
+
+        const { pick } = await userDecryptHandles(list);
+
+        const salary = data.salaryHandle ? pick(data.salaryHandle) : null;
+        const experience = data.experienceHandle ? pick(data.experienceHandle) : null;
+        const band = data.bandHandle ? pick(data.bandHandle) : null;
+
+        setDecryptValues({ salary, experience, band });
+      }
+
+      async function publishBand() {
+        requireConnection();
+        const profileId = parseProfileValue(ui.decryptProfileInput);
+        const tx = await _state.contract.publishMyBand(profileId);
+        appendLog("Publishing band", tx.hash);
+        await tx.wait();
+        appendLog("Band is now public", tx.hash);
+      }
+
+      async function encryptPolicyDraft() {
+        requireConnection();
+        requireOwner();
+
+        const profileId = parseProfileValue(ui.adminProfileInput);
+        const label = (ui.adminLabelInput.value || "").trim();
+        if (!label) throw new Error("Label is required");
+
+        const minExp = parseNonNegativeNumber(ui.adminMinExp);
+        const maxExp = parseNonNegativeNumber(ui.adminMaxExp);
+        if (maxExp < minExp) throw new Error("Max experience must be >= min experience");
+        if (minExp > 65535 || maxExp > 65535) throw new Error("Experience must fit uint16");
+
+        const salaryP25 = parseNonNegativeNumber(ui.adminSalaryP25);
+        const salaryP50 = parseNonNegativeNumber(ui.adminSalaryP50);
+        const salaryP75 = parseNonNegativeNumber(ui.adminSalaryP75);
+
+        const UINT32_MAX = 0xffffffff;
+        if (salaryP25 > UINT32_MAX || salaryP50 > UINT32_MAX || salaryP75 > UINT32_MAX) {
+          throw new Error("Salary percentile must fit uint32");
+        }
+
+        const builder = _state.relayer.createEncryptedInput(_config.contractAddress, _state.account);
+        builder.add16(minExp);
+        builder.add16(maxExp);
+        builder.add32(salaryP25);
+        builder.add32(salaryP50);
+        builder.add32(salaryP75);
+
+        const { handles, inputProof } = await builder.encrypt();
+
+        adminDraft = {
+          profileId,
+          label,
+          handles,
+          proof: inputProof
+        };
+
+        displayAdminHandles({
+          min: handles[0],
+          max: handles[1],
+          p25: handles[2],
+          p50: handles[3],
+          p75: handles[4]
+        });
+
+        appendLog("Policy encrypted", { profileId: profileId.toString() });
+        updateAdminAccess();
+      }
+
+      async function pushBenchmarkProfile() {
+        requireConnection();
+        requireOwner();
+        if (!adminDraft) throw new Error("Encrypt policy first");
+
+        const profileId = parseProfileValue(ui.adminProfileInput);
+        const label = (ui.adminLabelInput.value || "").trim();
+        if (!label) throw new Error("Label is required");
+
+        const [minHandle, maxHandle, p25Handle, p50Handle, p75Handle] = adminDraft.handles || [];
+        if (!minHandle || !p75Handle) throw new Error("Missing encrypted handles");
+
+        const tx = await _state.contract.setBenchmarkProfile(
+          profileId,
+          label,
+          minHandle,
+          maxHandle,
+          p25Handle,
+          p50Handle,
+          p75Handle,
+          adminDraft.proof
+        );
+
+        appendLog("setBenchmarkProfile tx", tx.hash);
+        await tx.wait();
+        appendLog("Profile configured", { profileId: profileId.toString() });
+        clearAdminDraft();
+      }
+
+      async function removeBenchmarkProfile() {
+        requireConnection();
+        requireOwner();
+
+        const profileId = parseProfileValue(ui.adminProfileInput);
+        const tx = await _state.contract.removeBenchmarkProfile(profileId);
+        appendLog("Removing profile", tx.hash);
+        await tx.wait();
+        appendLog("Profile removed", { profileId: profileId.toString() });
+        clearAdminDraft();
+      }
+
+      // --- bindings ---
+      ui.connectBtn.addEventListener("click", async () => {
+        try {
+          await connectWallet();
+          if (!watchersBound) {
+            window.ethereum.on?.("accountsChanged", () => window.location.reload());
+            window.ethereum.on?.("chainChanged", () => window.location.reload());
+            watchersBound = true;
+          }
+          updateConnectionUI();
+        } catch (err) {
+          appendLog("Connect failed", err?.message || err);
+        }
+      });
+
+      ui.disconnectBtn.addEventListener("click", async () => {
+        await disconnectWallet();
+        resetOutputs();
+        clearAdminDraft();
+        updateConnectionUI();
+      });
+
+      ui.randomBtn.addEventListener("click", fillRandomForm);
+
+      ui.profileInput.addEventListener("input", () => {
+        if (decryptLinked) ui.decryptProfileInput.value = ui.profileInput.value;
+      });
+
+      ui.decryptProfileInput.addEventListener("input", () => {
+        decryptLinked = false;
+      });
+
+      ui.submitBtn.addEventListener("click", async (event) => {
+        event.preventDefault();
+        try {
+          ui.submitBtn.disabled = true;
+          ui.submitBtn.textContent = "Encrypting…";
+          await encryptAndSubmit();
+        } catch (err) {
+          appendLog("Submit failed", err?.message || err);
+        } finally {
+          ui.submitBtn.disabled = !_state.account;
+          ui.submitBtn.textContent = "Encrypt & send";
+        }
+      });
+
+      ui.decryptBtn.addEventListener("click", async (event) => {
+        event.preventDefault();
+        try {
+          ui.decryptBtn.disabled = true;
+          ui.decryptBtn.textContent = "Decrypting…";
+          await decryptLatest();
+        } catch (err) {
+          appendLog("Decrypt failed", err?.message || err);
+        } finally {
+          ui.decryptBtn.disabled = !_state.account;
+          ui.decryptBtn.textContent = "Refresh & decrypt";
+        }
+      });
+
+      ui.publishBtn.addEventListener("click", async (event) => {
+        event.preventDefault();
+        try {
+          ui.publishBtn.disabled = true;
+          ui.publishBtn.textContent = "Publishing…";
+          await publishBand();
+        } catch (err) {
+          appendLog("Publish failed", err?.message || err);
+        } finally {
+          ui.publishBtn.disabled = !_state.account;
+          ui.publishBtn.textContent = "Make verdict public";
+        }
+      });
+
+      ui.adminEncryptBtn.addEventListener("click", async (event) => {
+        event.preventDefault();
+        try {
+          ui.adminEncryptBtn.disabled = true;
+          ui.adminEncryptBtn.textContent = "Encrypting…";
+          await encryptPolicyDraft();
+        } catch (err) {
+          appendLog("Encrypt policy failed", err?.message || err);
+        } finally {
+          ui.adminEncryptBtn.textContent = "Encrypt policy";
+          updateAdminAccess();
+        }
+      });
+
+      ui.adminPushBtn.addEventListener("click", async (event) => {
+        event.preventDefault();
+        try {
+          ui.adminPushBtn.disabled = true;
+          ui.adminPushBtn.textContent = "Pushing…";
+          await pushBenchmarkProfile();
+        } catch (err) {
+          appendLog("Push policy failed", err?.message || err);
+        } finally {
+          ui.adminPushBtn.textContent = "Push benchmark";
+          updateAdminAccess();
+        }
+      });
+
+      ui.adminRemoveBtn.addEventListener("click", async (event) => {
+        event.preventDefault();
+        if (!confirm("Remove this profile?")) return;
+
+        try {
+          ui.adminRemoveBtn.disabled = true;
+          ui.adminRemoveBtn.textContent = "Removing…";
+          await removeBenchmarkProfile();
+        } catch (err) {
+          appendLog("Remove profile failed", err?.message || err);
+        } finally {
+          ui.adminRemoveBtn.textContent = "Remove profile";
+          updateAdminAccess();
+        }
+      });
+
+      await configure({ contractAddress: CONTRACT_ADDRESS, abi: CONTRACT_ABI });
+      await autoConnectIfAuthorized();
+      updateConnectionUI();
+      resetOutputs();
+      clearAdminDraft();
+      appendLog("UI loaded");
+    </script>
+  </body>
+</html>
